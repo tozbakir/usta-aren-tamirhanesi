@@ -18,7 +18,8 @@ const VEHICLE_CATALOG = {
   tractor: {
     id: 'tractor',
     title: 'Dev Kamyon',
-    welcomeVoice: 'Dev Kaya Kamyonu tamirhanede Usta Aren! Pompayla patlak lastiği şişirelim, taşlamayla pasları silip fırçayla boyayalım!',
+    welcomeVoiceKey: 'welcome_tractor',
+    welcomeVoice: 'Dev Kamyon tamirhanede Usta Aren! Hadi şarjlı matkapla pasları temizleyelim ve patlak lastiği şişirelim!',
     defaultColor: 0,
     wheelPositions: [
       { x: 268, y: 268, r: 68 },
@@ -40,7 +41,8 @@ const VEHICLE_CATALOG = {
   excavator: {
     id: 'excavator',
     title: 'Dev Kepçe',
-    welcomeVoice: 'Dev Kepçe geldi Usta Aren! Hidrolik kolunu, lastiklerini ve çamurlarını temizleyelim!',
+    welcomeVoiceKey: 'welcome_excavator',
+    welcomeVoice: 'Dev Kepçe geldi Usta Aren! Gevşek vidaları matkapla sıkalım ve kepçe kolunu tamir edelim!',
     defaultColor: 0,
     wheelPositions: [
       { x: 245, y: 272, r: 60 },
@@ -62,7 +64,8 @@ const VEHICLE_CATALOG = {
   firetruck: {
     id: 'firetruck',
     title: 'Süper İtfaiye',
-    welcomeVoice: 'Süper İtfaiye garajda Usta Aren! Patlak tekerleğini şişirelim ve sirenini parlatıp yola çıkalım!',
+    welcomeVoiceKey: 'welcome_firetruck',
+    welcomeVoice: 'Süper İtfaiye burada Usta Aren! Merdiveni düzeltelim, vidaları sıkalım ve parlak kırmızıya boyayalım!',
     defaultColor: 1,
     wheelPositions: [
       { x: 250, y: 272, r: 62 },
@@ -84,7 +87,8 @@ const VEHICLE_CATALOG = {
   monster: {
     id: 'monster',
     title: 'Canavar Kamyon',
-    welcomeVoice: 'Canavar Kamyon tamirhanede! Dev tekerlekleri şişirelim ve roket motoru takalım Usta Aren!',
+    welcomeVoiceKey: 'welcome_monster',
+    welcomeVoice: 'Canavar Kamyon sahnede Usta Aren! Dev tekerlekleri şişirelim ve çılgın modifiye yapalım!',
     defaultColor: 3,
     wheelPositions: [
       { x: 250, y: 266, r: 68 },
@@ -106,11 +110,13 @@ const VEHICLE_CATALOG = {
   washer: {
     id: 'washer',
     title: 'Çamaşır Makinesi',
-    welcomeVoice: 'Çamaşır Makinesi bozulmuş Usta Aren! Şarjlı matkapla gevşek vidaları sıkalım, su pompasını ve sıkışan kapağı tamir edip tamburu döndürelim!',
+    isAppliance: true,
+    welcomeVoiceKey: 'welcome_washer',
+    welcomeVoice: 'Çamaşır Makinesi bozulmuş Usta Aren! Şarjlı matkapla gevşek vidaları sıkalım, su borusunu tamir edip çamaşır yıkayalım!',
     defaultColor: 2,
     wheelPositions: [
-      { x: 256, y: 294, r: 30 },
-      { x: 434, y: 294, r: 30 }
+      { x: 256, y: 292, r: 26 },
+      { x: 434, y: 292, r: 26 }
     ],
     boltPositions: [
       { x: 232, y: 122 },
@@ -122,6 +128,31 @@ const VEHICLE_CATALOG = {
       { x: 236, y: 182 },
       { x: 454, y: 182 },
       { x: 345, y: 112 }
+    ],
+    roofAnchor: { x: 345, y: 46 }
+  },
+
+  dishwasher: {
+    id: 'dishwasher',
+    title: 'Bulaşık Makinesi',
+    isAppliance: true,
+    welcomeVoiceKey: 'welcome_dishwasher',
+    welcomeVoice: 'Bulaşık Makinesi arızalanmış Usta Aren! Matkapla kapak vidalarını sıkalım, su fıskiyesini tamir edip bulaşıkları yıkayalım!',
+    defaultColor: 4,
+    wheelPositions: [
+      { x: 256, y: 292, r: 26 },
+      { x: 434, y: 292, r: 26 }
+    ],
+    boltPositions: [
+      { x: 228, y: 118 },
+      { x: 462, y: 118 },
+      { x: 228, y: 246 },
+      { x: 462, y: 246 }
+    ],
+    decalSlots: [
+      { x: 234, y: 182 },
+      { x: 456, y: 182 },
+      { x: 345, y: 108 }
     ],
     roofAnchor: { x: 345, y: 46 }
   }
@@ -138,7 +169,7 @@ function createInitialVehicleState(vehicleId) {
     roofDent: false,
     engineDent: false,
     turboExhaust: false,
-    boltsLoose: vehicleId === 'washer' ? [true, true, true, true] : [true, true, false],
+    boltsLoose: cfg.isAppliance ? [true, true, true, true] : [true, true, false],
     mudLevels: [1, 1, 1],
     decals: [],
     bucketAngle: 0
@@ -193,8 +224,42 @@ function renderVehicleDefs(u, palette) {
   `;
 }
 
+// Çamaşır ve Bulaşık Makinesi İçin Araba Tekerleği Yerine Gerçek Denge Ayağı & Su Tahliye Pompa Valfi
+function renderApplianceBaseFeetSVG(wheelCfg, idx, isBroken) {
+  const { x, y } = wheelCfg;
+  if (idx === 0 && isBroken) {
+    return `
+      <g transform="translate(${x}, ${y})" class="wheel-group interactive-part" data-part="wheel" data-wheel-index="${idx}">
+        <!-- Su Kaçağı ve Köpük Sızıntısı (Araba Lastiği Değil, Arızalı Su Tahliye Pompası!) -->
+        <ellipse cx="0" cy="14" rx="44" ry="11" fill="#38bdf8" opacity="0.7" stroke="#ffffff" stroke-width="3"/>
+        <ellipse cx="-8" cy="14" rx="26" ry="6" fill="#caf0f8" opacity="0.9"/>
+        <!-- Açılmış Tahliye Filtre Borusu -->
+        <rect x="-22" y="-14" width="44" height="22" rx="6" fill="#334155" stroke="#ffffff" stroke-width="5" paint-order="stroke fill"/>
+        <circle cx="-6" cy="-3" r="8" fill="#0f172a" stroke="#ef4444" stroke-width="3"/>
+        <!-- Fışkıran Su Damlaları ve Köpükler -->
+        <path d="M -12 -6 C -28 -22, -38 -8, -22 4 Z" fill="#38bdf8" stroke="#ffffff" stroke-width="3" paint-order="stroke fill"/>
+        <path d="M 6 -8 C 22 -26, 34 -10, 16 4 Z" fill="#00b4d8" stroke="#ffffff" stroke-width="3" paint-order="stroke fill"/>
+        <circle cx="-18" cy="-16" r="6" fill="#caf0f8" stroke="#ffffff" stroke-width="2"/>
+        <circle cx="14" cy="-18" r="5" fill="#ffffff"/>
+      </g>
+    `;
+  }
+
+  return `
+    <g transform="translate(${x}, ${y})" class="wheel-group interactive-part" data-part="wheel" data-wheel-index="${idx}">
+      <!-- Sağlam Beyaz Eşya Kauçuk Denge Ayağı ve Kapalı Su Valfi -->
+      <rect x="-24" y="-10" width="48" height="16" rx="5" fill="#334155" stroke="#ffffff" stroke-width="5" paint-order="stroke fill"/>
+      <rect x="-30" y="2" width="60" height="10" rx="5" fill="#1e293b" stroke="#ffffff" stroke-width="3" paint-order="stroke fill"/>
+      ${idx === 0 ? `<circle cx="0" cy="-2" r="5" fill="#38b000" stroke="#ffffff" stroke-width="1.5"/>` : ''}
+    </g>
+  `;
+}
+
 // Referans Görseldeki Detaylı İş Makinesi Tekerleği + Patlak Lastik & Saplanmış Yapraklı Dal (Saf Vektör Beyaz Sticker Konturlu)
-function renderStudioWheelSVG(wheelCfg, idx, wheelType, isBroken, u, isDriving = false) {
+function renderStudioWheelSVG(wheelCfg, idx, wheelType, isBroken, u, isDriving = false, isAppliance = false) {
+  if (isAppliance) {
+    return renderApplianceBaseFeetSVG(wheelCfg, idx, isBroken);
+  }
   const { x, y, r } = wheelCfg;
 
   if (isBroken && !isDriving) {
@@ -327,7 +392,7 @@ function renderAuthenticRustMudSVG(mudLevels, u, isDriving = false, vehicleId = 
     `;
   }
 
-  const mudShift = vehicleId === 'washer' ? 'transform="translate(68, 28) scale(0.88)"' : '';
+  const mudShift = (vehicleId === 'washer' || vehicleId === 'dishwasher') ? 'transform="translate(68, 28) scale(0.88)"' : '';
 
   return `
     <g class="mud-blob interactive-part" data-part="mud" data-mud-index="0" ${mudShift} opacity="${Math.min(1, totalMud * 1.15).toFixed(2)}">
@@ -418,8 +483,8 @@ function renderSceneInteractiveToolsSVG(state, isDriving = false, vehicleId = 't
 
   let html = '';
 
-  // 1. Sol Üst: Çamaşır Makinesinde (veya Gevşek Vidalarda) Şarjlı Matkap + Kamyonda Taşlama/Matkap!
-  if (vehicleId === 'washer') {
+  // 1. Sol Üst: Çamaşır veya Bulaşık Makinesinde (veya Gevşek Vidalarda) Şarjlı Matkap + Kamyonda Taşlama/Matkap!
+  if (vehicleId === 'washer' || vehicleId === 'dishwasher') {
     if (hasLooseBolts || hasMud) {
       const cfg = VEHICLE_CATALOG[vehicleId];
       const firstLooseIdx = state.boltsLoose.findIndex(Boolean);
@@ -880,6 +945,123 @@ function renderStudioBodySVG(vehicleId, state, u) {
     `;
   }
 
+  if (vehicleId === 'dishwasher') {
+    const doorBroken = state.wheelsBroken[0];
+    return `
+      <!-- Saf Vektör Beyaz Sticker Dış Kontur (60FPS Tablet GPU) -->
+      <rect x="202" y="48" width="286" height="238" rx="18"
+        fill="#ffffff" stroke="#ffffff" stroke-width="12" stroke-linejoin="round"/>
+
+      <!-- Bulaşık Makinesi Ana Gövde (Boyanmadan Önce Gri Astar Çelik, Boyanınca Canlı Parlak Renk!) -->
+      <rect x="205" y="50" width="280" height="234" rx="16" fill="${bedFill}"/>
+      <!-- Sağ 3B Derinlik Kenarı -->
+      <path d="M 462 50 L 469 50 C 478 50, 485 57, 485 66 L 485 268 C 485 277, 478 284, 469 284 L 462 284 Z" fill="${sideFill}" opacity="0.85"/>
+      <!-- Sol Üst Parlama Şeridi -->
+      <path d="M 216 64 L 216 266" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
+
+      <!-- Üst Dijital Kontrol Paneli ve Kapak Kolu -->
+      <path d="M 205 66 C 205 57, 212 50, 221 50 L 469 50 C 478 50, 485 57, 485 66 L 485 100 L 205 100 Z" fill="#1e293b"/>
+      <line x1="205" y1="100" x2="485" y2="100" stroke="#94a3b8" stroke-width="4"/>
+
+      <!-- Sol: Yıkama Program Tuşları ve Tablet Deterjan Göstergesi -->
+      <rect x="220" y="62" width="24" height="24" rx="5" fill="#334155" stroke="#64748b" stroke-width="2"/>
+      <circle cx="232" cy="74" r="5" fill="#38bdf8"/>
+      <rect x="250" y="62" width="24" height="24" rx="5" fill="#334155" stroke="#64748b" stroke-width="2"/>
+      <circle cx="262" cy="74" r="5" fill="#ffbe0b"/>
+      <rect x="280" y="62" width="18" height="24" rx="4" fill="#334155"/>
+
+      <!-- Orta: Krom Ankastre Kapak Kolu -->
+      <rect x="308" y="62" width="74" height="16" rx="8" fill="#cbd5e1" stroke="#475569" stroke-width="2.5"/>
+      <rect x="316" y="66" width="58" height="6" rx="3" fill="#475569"/>
+
+      <!-- Sağ: Dijital Sıcaklık ve Durum LED Ekranı -->
+      <rect x="394" y="60" width="76" height="28" rx="6" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+      <circle cx="408" cy="74" r="5" fill="${doorBroken ? '#ef4444' : '#38b000'}"/>
+      <rect x="420" y="67" width="16" height="14" rx="3" fill="#38bdf8" opacity="0.85"/>
+      <rect x="442" y="67" width="18" height="14" rx="3" fill="#ff9f1c" opacity="0.85"/>
+
+      <!-- BULAŞIK MAKİNESİ İÇ KAZAN CAM PENCERESİ (Üst Sepet, Alt Sepet ve 60FPS Dönen Su Fıskiyesi!) -->
+      <g transform="translate(345, 182)">
+        <rect x="-104" y="-68" width="208" height="136" rx="14" fill="#0f172a" stroke="#cbd5e1" stroke-width="8"/>
+        <rect x="-96" y="-60" width="192" height="120" rx="10" fill="#1e293b"/>
+
+        <!-- ÜST SEPET (Renkli Kupa Bardaklar ve Kaseler) -->
+        <g transform="translate(0, -30)">
+          <!-- Kırmızı Kase -->
+          <path d="M -78 -8 C -78 10, -46 10, -46 -8 Z" fill="#e63946" stroke="#ffffff" stroke-width="2"/>
+          <!-- Sarı Kupa -->
+          <rect x="-34" y="-16" width="22" height="22" rx="4" fill="#ffbe0b" stroke="#ffffff" stroke-width="2"/>
+          <!-- Turkuaz Kupa -->
+          <rect x="-2" y="-16" width="22" height="22" rx="4" fill="#38bdf8" stroke="#ffffff" stroke-width="2"/>
+          <!-- Pembe Kase -->
+          <path d="M 32 -8 C 32 10, 68 10, 68 -8 Z" fill="#ff4d8d" stroke="#ffffff" stroke-width="2"/>
+          <!-- Tel Sepet Izgarası -->
+          <line x1="-88" y1="8" x2="88" y2="8" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+          <line x1="-70" y1="-2" x2="-70" y2="8" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+          <line x1="-40" y1="-2" x2="-40" y2="8" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+          <line x1="-10" y1="-2" x2="-10" y2="8" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+          <line x1="25" y1="-2" x2="25" y2="8" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+          <line x1="55" y1="-2" x2="55" y2="8" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+          <line x1="78" y1="-2" x2="78" y2="8" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+        </g>
+
+        <!-- ALT SEPET (Tabaklar, Tencere ve Çatal-Kaşık Sepeti) -->
+        <g transform="translate(0, 32)">
+          <!-- Sıralı Yemek Tabakları -->
+          <ellipse cx="-68" cy="0" rx="7" ry="20" fill="#ffffff" stroke="#38bdf8" stroke-width="2.5" transform="rotate(-8 -68 0)"/>
+          <ellipse cx="-48" cy="0" rx="7" ry="20" fill="#caf0f8" stroke="#0077b6" stroke-width="2.5" transform="rotate(-8 -48 0)"/>
+          <ellipse cx="-28" cy="0" rx="7" ry="20" fill="#ffffff" stroke="#38bdf8" stroke-width="2.5" transform="rotate(-8 -28 0)"/>
+          <!-- Turuncu Tencere -->
+          <rect x="-6" y="-8" width="44" height="24" rx="6" fill="#ff9f1c" stroke="#ffffff" stroke-width="2"/>
+          <rect x="-12" y="-4" width="6" height="8" rx="2" fill="#334155"/>
+          <rect x="38" y="-4" width="6" height="8" rx="2" fill="#334155"/>
+          <!-- Çatal Kaşık Sepeti -->
+          <rect x="52" y="-6" width="28" height="22" rx="4" fill="#475569" stroke="#cbd5e1" stroke-width="2"/>
+          <line x1="60" y1="-16" x2="60" y2="-6" stroke="#e2e8f0" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="70" y1="-16" x2="70" y2="-6" stroke="#e2e8f0" stroke-width="3.5" stroke-linecap="round"/>
+          <!-- Alt Tel Izgara -->
+          <line x1="-88" y1="18" x2="88" y2="18" stroke="#94a3b8" stroke-width="4.5" stroke-linecap="round"/>
+        </g>
+
+        <!-- 60FPS DÖNEN SU FISKİYESİ PERVANESİ (.wheel-spin-node ile otomatik döner!) -->
+        <g transform="translate(0, 2)">
+          <g class="wheel-spin-node">
+            <rect x="-64" y="-6" width="128" height="12" rx="6" fill="#38bdf8" stroke="#ffffff" stroke-width="2.5"/>
+            <rect x="-6" y="-42" width="12" height="84" rx="6" fill="#00b4d8" stroke="#ffffff" stroke-width="2.5"/>
+            <circle cx="0" cy="0" r="11" fill="#ffbe0b" stroke="#ffffff" stroke-width="2.5"/>
+            <!-- Su Püskürtme Nozulları ve Damlalar -->
+            <circle cx="-48" cy="0" r="3.5" fill="#ffffff"/>
+            <circle cx="48" cy="0" r="3.5" fill="#ffffff"/>
+            <circle cx="0" cy="-30" r="3.5" fill="#ffffff"/>
+            <circle cx="0" cy="30" r="3.5" fill="#ffffff"/>
+            <circle cx="-30" cy="-22" r="5" fill="#caf0f8" opacity="0.9"/>
+            <circle cx="32" cy="20" r="5" fill="#caf0f8" opacity="0.9"/>
+          </g>
+        </g>
+
+        <!-- Cam Parlaması -->
+        <path d="M -84 -46 L -38 -46 L -64 42 L -84 42 Z" fill="#ffffff" opacity="0.16"/>
+
+        ${doorBroken ? `
+          <!-- Arızalıyken Kapaktan Taşan Köpük ve Sıkışmış Tabak/Kaşık -->
+          <g transform="translate(-56, 56) rotate(-14)">
+            <ellipse cx="0" cy="0" rx="18" ry="9" fill="#ff4d8d" stroke="#ffffff" stroke-width="3.5"/>
+            <circle cx="16" cy="-4" r="8" fill="#caf0f8" stroke="#ffffff" stroke-width="2"/>
+            <circle cx="26" cy="2" r="6" fill="#ffffff"/>
+          </g>
+        ` : ''}
+      </g>
+
+      <!-- Alt Baza Kapağı -->
+      <rect x="220" y="260" width="250" height="16" rx="5" fill="#334155" opacity="0.32"/>
+
+      ${!state.primerUnpainted ? `
+        ${window.renderSparkleStar(228, 108, 10, 0.1)}
+        ${window.renderSparkleStar(462, 108, 12, 0.4)}
+      ` : ''}
+    `;
+  }
+
   return `
     <path d="M 158 204 L 176 132 L 268 132 L 306 78 L 436 78 L 478 132 L 568 142 L 576 204 L 540 241 L 205 241 Z"
       fill="#ffffff" stroke="#ffffff" stroke-width="11" stroke-linejoin="round"/>
@@ -925,7 +1107,7 @@ function buildCompleteVehicleSVG(vehicleId, state, isDriving = false) {
   const sigs = computeLayerSignatures(vehicleId, state, isDriving);
 
   const wheelsMarkup = cfg.wheelPositions
-    .map((w, i) => renderStudioWheelSVG(w, i, state.wheelType, state.wheelsBroken[i], u, isDriving))
+    .map((w, i) => renderStudioWheelSVG(w, i, state.wheelType, state.wheelsBroken[i], u, isDriving, Boolean(cfg.isAppliance)))
     .join('');
 
   return `
@@ -1052,7 +1234,7 @@ function updateVehicleInPlace(containerEl, vehicleId, state, isDriving = false) 
   if (wheelsLayer && wheelsLayer.dataset.sig !== sigs.wheelsSig) {
     wheelsLayer.dataset.sig = sigs.wheelsSig;
     wheelsLayer.innerHTML = cfg.wheelPositions
-      .map((w, i) => renderStudioWheelSVG(w, i, state.wheelType, state.wheelsBroken[i], u, isDriving))
+      .map((w, i) => renderStudioWheelSVG(w, i, state.wheelType, state.wheelsBroken[i], u, isDriving, Boolean(cfg.isAppliance)))
       .join('');
     wheelsRefreshed = true;
   }

@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23ff9f1c' stroke='%23ffffff' stroke-width='4'/%3E%3C/svg%3E">
   <title>Usta Aren'in Çılgın Tamirhanesi</title>
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
   <div id="sr-announcer" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
@@ -21,7 +21,7 @@
       <div id="welcome-avatar" class="welcome-avatar" aria-hidden="true"></div>
       <h1 id="welcome-title">Usta Aren'in<br><span>Çılgın Tamirhanesi</span></h1>
       <p class="welcome-subtitle">
-        Burada kuralları <strong>Aren Usta</strong> koyar! Patlak lastiği pompayla şişir, şarjlı matkapla vidaları sık, çamaşır makinesini ve dev araçları tamir et!
+        Burada kuralları <strong>Aren Usta</strong> koyar! Şarjlı matkapla vidaları sık, çamaşır ve bulaşık makinelerini tamir edip yıkamayı başlat, dev araçlarla sürüşe çık!
       </p>
       <button type="button" id="start-game-btn" class="giant-start-btn">
         <span id="start-btn-icon" class="btn-svg-wrap" aria-hidden="true"></span>
@@ -44,11 +44,11 @@
       </div>
     </div>
 
-    <!-- Araç Seçim Sekmeleri -->
-    <nav class="vehicle-nav" aria-label="Tamir edilecek araçlar">
+    <!-- Araç ve Beyaz Eşya Seçim Sekmeleri -->
+    <nav class="vehicle-nav" aria-label="Tamir edilecek araçlar ve makineler">
       <button type="button" class="vehicle-tab" data-vehicle="tractor" aria-pressed="true" aria-label="Dev Kamyon">
         <span class="tab-svg" data-icon="tabDumpTruck" aria-hidden="true"></span>
-        <span class="tab-label">Dev Kamyon</span>
+        <span class="tab-label">Kamyon</span>
       </button>
       <button type="button" class="vehicle-tab" data-vehicle="excavator" aria-pressed="false" aria-label="Dev Kepçe">
         <span class="tab-svg" data-icon="tabExcavator" aria-hidden="true"></span>
@@ -66,17 +66,21 @@
         <span class="tab-svg" data-icon="tabWasher" aria-hidden="true"></span>
         <span class="tab-label">Çamaşır M.</span>
       </button>
+      <button type="button" class="vehicle-tab" data-vehicle="dishwasher" aria-pressed="false" aria-label="Bulaşık Makinesi">
+        <span class="tab-svg" data-icon="tabDishwasher" aria-hidden="true"></span>
+        <span class="tab-label">Bulaşık M.</span>
+      </button>
     </nav>
 
     <!-- Aksiyon Düğmeleri -->
     <div class="header-actions">
-      <button type="button" id="mischief-btn" class="action-pill mischief-pill" aria-label="Afacan Modu: Çamur at ve lastiği patlat">
+      <button type="button" id="mischief-btn" class="action-pill mischief-pill" aria-label="Afacan Modu: Kirlet ve Boz">
         <span class="pill-svg" data-icon="mischiefMud" aria-hidden="true"></span>
         <span class="pill-text">Kirlet / Boz!</span>
       </button>
-      <button type="button" id="test-drive-btn" class="action-pill drive-pill" aria-label="Test sürüşüne çık">
+      <button type="button" id="test-drive-btn" class="action-pill drive-pill" aria-label="Oyuna veya Sürüşe Başla">
         <span class="pill-svg" data-icon="flagGo" aria-hidden="true"></span>
-        <span class="pill-text">Sürüşe Çık!</span>
+        <span id="test-drive-text" class="pill-text">Sürüşe Çık!</span>
       </button>
       <button type="button" id="sound-toggle-btn" class="icon-btn" aria-pressed="true" aria-label="Sesi Aç veya Kapat">
         <span id="sound-icon-slot" class="pill-svg" aria-hidden="true"></span>
@@ -154,7 +158,7 @@
       </div>
       <div class="status-chip" id="chip-bolts">
         <span class="chip-dot"></span>
-        <span>Lastik & Vidalar</span>
+        <span id="chip-bolts-text">Lastik & Vidalar</span>
       </div>
       <div class="status-chip" id="chip-dents">
         <span class="chip-dot"></span>
@@ -220,6 +224,32 @@
       </div>
     </div>
 
+    <!-- 60FPS Çamaşır & Bulaşık Makinesi Etkileşimli Yıkama Oyunu Sahnesi -->
+    <div id="appliance-play-stage" class="appliance-play-stage" hidden>
+      <div class="appliance-play-layout">
+        <!-- Sol: Kirli Çamaşırlar / Kirli Bulaşıklar ve Deterjan Tepsisi -->
+        <div id="appliance-items-tray" class="appliance-items-tray" aria-label="Yıkanacak eşyalar ve deterjan"></div>
+
+        <!-- Orta/Sağ: Etkileşimli Çamaşır veya Bulaşık Makinesi -->
+        <div id="appliance-machine-view" class="appliance-machine-view"></div>
+      </div>
+
+      <div class="drive-controls appliance-controls">
+        <button type="button" id="app-start-wash-btn" class="drive-action-btn jump-color">
+          <span class="drive-btn-svg" data-icon="wash" aria-hidden="true"></span>
+          <span id="app-start-wash-text">YIKAMAYI BAŞLAT!</span>
+        </button>
+        <button type="button" id="app-reset-items-btn" class="drive-action-btn horn-color">
+          <span class="drive-btn-svg" data-icon="wacky" aria-hidden="true"></span>
+          <span id="app-reset-items-text">YENİDEN DOLDUR!</span>
+        </button>
+        <button type="button" id="app-back-garage-btn" class="drive-action-btn garage-color">
+          <span class="drive-btn-svg" data-icon="wrench" aria-hidden="true"></span>
+          <span>Tamirhaneye Dön</span>
+        </button>
+      </div>
+    </div>
+
     <!-- İmleci / Parmağı Takip Eden Canlı SVG Alet -->
     <div id="floating-tool" class="floating-tool" aria-hidden="true" hidden></div>
 
@@ -262,9 +292,9 @@
     </div>
   </footer>
 
-  <script defer src="svg-assets.js?v=6"></script>
-  <script defer src="vehicles.js?v=6"></script>
-  <script defer src="audio.js?v=6"></script>
-  <script defer src="game.js?v=6"></script>
+  <script defer src="svg-assets.js?v=7"></script>
+  <script defer src="vehicles.js?v=7"></script>
+  <script defer src="audio.js?v=7"></script>
+  <script defer src="game.js?v=7"></script>
 </body>
 </html>

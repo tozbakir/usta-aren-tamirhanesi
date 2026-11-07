@@ -318,6 +318,24 @@ const SVG_ICONS = {
     </svg>
   `,
 
+  tabDishwasher: `
+    <svg viewBox="0 0 72 50" class="svg-icon" aria-hidden="true">
+      <rect x="17" y="4" width="38" height="42" rx="5" fill="#3a86ff" stroke="#ffffff" stroke-width="2.8"/>
+      <rect x="19" y="6" width="34" height="9" rx="2.5" fill="#1e293b"/>
+      <rect x="28" y="9" width="16" height="3.5" rx="1.5" fill="#cbd5e1"/>
+      <circle cx="23" cy="10.5" r="2" fill="#38b000"/>
+      <circle cx="49" cy="10.5" r="2" fill="#ffbe0b"/>
+      <rect x="21" y="18" width="30" height="24" rx="3" fill="#0f172a" stroke="#ffffff" stroke-width="1.8"/>
+      <!-- Üst ve Alt Bulaşık Sepeti Tabağı -->
+      <line x1="23" y1="28" x2="49" y2="28" stroke="#94a3b8" stroke-width="2"/>
+      <circle cx="29" cy="23" r="4" fill="#ffbe0b"/>
+      <circle cx="38" cy="23" r="4" fill="#ff4d8d"/>
+      <ellipse cx="30" cy="35" rx="3" ry="5" fill="#ffffff"/>
+      <ellipse cx="37" cy="35" rx="3" ry="5" fill="#38bdf8"/>
+      <ellipse cx="44" cy="35" rx="3" ry="5" fill="#ffffff"/>
+    </svg>
+  `,
+
   mischiefMud: `
     <svg viewBox="0 0 48 48" class="svg-icon" aria-hidden="true">
       <path d="M 24 6 C 18 14, 8 18, 10 28 C 12 38, 36 38, 38 28 C 40 18, 30 14, 24 6 Z" fill="#7f4f24" stroke="#ffffff" stroke-width="3"/>

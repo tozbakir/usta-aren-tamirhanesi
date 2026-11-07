@@ -5,6 +5,7 @@
   let currentTool = 'drill';
   let stars = 0;
   let isTestDrive = false;
+  let isAppliancePlay = false;
   const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
 
   const vehicleStates = {
@@ -12,7 +13,28 @@
     excavator: window.createInitialVehicleState('excavator'),
     firetruck: window.createInitialVehicleState('firetruck'),
     monster: window.createInitialVehicleState('monster'),
-    washer: window.createInitialVehicleState('washer')
+    washer: window.createInitialVehicleState('washer'),
+    dishwasher: window.createInitialVehicleState('dishwasher')
+  };
+
+  // Çamaşır & Bulaşık Makinesi Etkileşimli Yıkama Oyunu Durumu
+  const appliancePlayState = {
+    washer: {
+      itemsLoaded: [false, false, false, false],
+      detergentAdded: false,
+      isWashing: false,
+      isClean: false,
+      spinAngle: 0,
+      washTimer: 0
+    },
+    dishwasher: {
+      itemsLoaded: [false, false, false, false],
+      detergentAdded: false,
+      isWashing: false,
+      isClean: false,
+      spinAngle: 0,
+      washTimer: 0
+    }
   };
 
   // Atölye Süspansiyon Yay Fiziği (Hareketsizken Uyku Moduna Geçer -> 0 CPU/GPU Yükü)
@@ -39,66 +61,71 @@
   const TOOL_PHRASES = {
     drill: [
       'Vıııınn! Şarjlı matkap vidaları sımsıkı sıkıyor, pasları parlatıyor Usta Aren!',
-      'Matkap ucu hızla dönüyor, kıvılcımlar çıkıyor! Harikasın Aren Usta!',
+      'Matkap ucu hızla dönüyor, harikasın Aren Usta!',
       'Bütün gevşek vidalar matkapla sıkıldı, pırıl pırıl oldu Aren!'
     ],
     wrench: [
       'Fıss fıss! Yeşil hava pompası patlak lastiği şişirdi Usta Aren!',
-      'Tekerlek taş gibi sağlam oldu, aferin Aren Usta!',
-      'Basınç tamam! Kamyon yola çıkmaya hazır Aren!'
+      'Tekerlek taş gibi sağlam oldu, aferin Aren Usta!'
     ],
     paint: [
       'Fırçayla boyuyoruz! Bu parlak renk çok yakıştı Usta Aren!',
-      'Gri astar boyandı, kamyon yepyeni oldu Aren Usta!',
-      'Süper tasarım! Burada kuralları Aren Usta koyar!'
+      'Gri astar boyandı, yepyeni oldu Aren Usta!'
     ],
     hammer: [
-      'Tak tak tak! Ne güçlü bir çekiç Usta Aren!',
-      'Güm! Yamuk yerler dümdüz oldu, süspansiyon zıpladı!',
-      'Süper çekiç darbesi Aren Usta!'
+      'Tak tak tak! Ne güçlü bir çekiç Usta Aren, yamuk yerler dümdüz oldu!'
     ],
     wacky: [
-      'Hahaha! Çörek tekerlek mi taktın Usta Aren?!',
-      'Çılgın modifiye! Süper parçalar takıldı Aren!',
-      'Burası Aren’in tamirhanesi, burada kuralları Aren koyar!'
+      'Hahaha! Çılgın parçalar takıldı, burada kuralları Aren Usta koyar!'
     ],
     wash: [
-      'Düt düüüt! Köpüklerle tertemiz oldu Usta Aren!',
-      'Bütün çamurlar yıkandı, yıldız gibi parlıyor Aren!',
-      'Havalı korna çalıyor! Yolu açın Usta Aren geliyor!'
+      'Köpüklerle tertemiz yıkandı, yıldız gibi parlıyor Usta Aren!'
     ]
   };
 
   const WASHER_PHRASES = {
     drill: [
-      'Vıııınn! Şarjlı matkapla çamaşır makinesinin gevşek vidalarını sıktık Usta Aren!',
-      'Matkap çalıştı, çamaşır makinesinin tamburu hızla dönüyor Aren Usta!',
-      'Bütün kapak vidaları matkapla sağlamlaştırıldı, harikasın Usta Aren!'
+      'Şarjlı matkapla çamaşır makinesinin gevşek vidalarını sıktık Usta Aren!',
+      'Bütün gevşek vidalar matkapla sıkıldı, pırıl pırıl oldu Aren!'
     ],
     wrench: [
-      'Fıss fıss! Su pompası tamir edildi, kapağa sıkışan çorap kurtarıldı Usta Aren!',
-      'Su kaçağı durdu, çamaşır makinesi saat gibi çalışıyor Aren Usta!',
-      'Kapak contası ve pompa taş gibi sağlam oldu Aren!'
+      'Su tahliye borusu tamir edildi, kapağa sıkışan çorap kurtarıldı Usta Aren!'
     ],
     paint: [
-      'Fırçayla çamaşır makinesini boyuyoruz! Bu renk harika oldu Usta Aren!',
-      'Çamaşır makinesi yepyeni parlıyor Aren Usta!',
-      'Süper tasarım! En havalı çamaşır makinesi Usta Aren’in tamirhanesinde!'
+      'Çamaşır makinesi fırçayla boyandı, harika görünüyor Usta Aren!',
+      'Fırçayla boyuyoruz! Bu parlak renk çok yakıştı Usta Aren!'
     ],
     hammer: [
-      'Tak tak tak! Çamaşır makinesinin kazan sarsıntısı düzeldi Usta Aren!',
-      'Güm! Gövde sacı dümdüz oldu, tambur fırıl fırıl dönüyor!',
-      'Ne güçlü bir usta darbesi Aren Usta!'
+      'Tak tak tak! Ne güçlü bir çekiç Usta Aren, yamuk yerler dümdüz oldu!'
     ],
     wacky: [
-      'Hahaha! Çamaşır makinesine çörek tekerlek ve roket mi taktın Usta Aren?!',
-      'Uçan çılgın çamaşır makinesi! Burada kuralları Aren Usta koyar!',
-      'Süper modifiye! Bu çamaşır makinesi yarışa hazır Aren!'
+      'Hahaha! Çılgın parçalar takıldı, burada kuralları Aren Usta koyar!'
     ],
     wash: [
-      'Köpükler fışkırıyor! Çamaşırlar bembeyaz ve mis kokulu oldu Usta Aren!',
-      'Tambur köpüklerle dönüyor, tertemiz yıkandı Aren Usta!',
-      'Düt düüüt! Köpüklü çamaşır makinesi yola çıkmaya hazır!'
+      'Köpüklerle tertemiz yıkandı, yıldız gibi parlıyor Usta Aren!'
+    ]
+  };
+
+  const DISHWASHER_PHRASES = {
+    drill: [
+      'Şarjlı matkapla bulaşık makinesinin kapak vidalarını sağlamlaştırdık Usta Aren!',
+      'Bütün gevşek vidalar matkapla sıkıldı, pırıl pırıl oldu Aren!'
+    ],
+    wrench: [
+      'Bulaşık makinesinin su pompası ve fıskiye pervanesi tamir edildi Usta Aren!'
+    ],
+    paint: [
+      'Bulaşık makinesini pırıl pırıl boyadık, ellerine sağlık Aren Usta!',
+      'Fırçayla boyuyoruz! Bu parlak renk çok yakıştı Usta Aren!'
+    ],
+    hammer: [
+      'Tak tak tak! Ne güçlü bir çekiç Usta Aren, yamuk yerler dümdüz oldu!'
+    ],
+    wacky: [
+      'Hahaha! Çılgın parçalar takıldı, burada kuralları Aren Usta koyar!'
+    ],
+    wash: [
+      'Köpüklerle tertemiz yıkandı, yıldız gibi parlıyor Usta Aren!'
     ]
   };
 
@@ -113,12 +140,14 @@
   const garageDoor = document.getElementById('garage-door');
   const mischiefBtn = document.getElementById('mischief-btn');
   const testDriveBtn = document.getElementById('test-drive-btn');
+  const testDriveText = document.getElementById('test-drive-text');
   const soundToggleBtn = document.getElementById('sound-toggle-btn');
   const soundIconSlot = document.getElementById('sound-icon-slot');
   const floatingTool = document.getElementById('floating-tool');
   const srAnnouncer = document.getElementById('sr-announcer');
 
   const chipBolts = document.getElementById('chip-bolts');
+  const chipBoltsText = document.getElementById('chip-bolts-text');
   const chipDents = document.getElementById('chip-dents');
   const chipMud = document.getElementById('chip-mud');
 
@@ -129,6 +158,16 @@
   const driveHornBtn = document.getElementById('drive-horn-btn');
   const driveJumpBtn = document.getElementById('drive-jump-btn');
   const backGarageBtn = document.getElementById('back-garage-btn');
+
+  const appliancePlayStage = document.getElementById('appliance-play-stage');
+  const applianceItemsTray = document.getElementById('appliance-items-tray');
+  const applianceMachineView = document.getElementById('appliance-machine-view');
+  const appStartWashBtn = document.getElementById('app-start-wash-btn');
+  const appStartWashText = document.getElementById('app-start-wash-text');
+  const appResetItemsBtn = document.getElementById('app-reset-items-btn');
+  const appBackGarageBtn = document.getElementById('app-back-garage-btn');
+
+  let appSpinNodes = [];
 
   // Önbelleğe Alınmış SVG Alt Düğüm Referansları (Her Karede querySelector Çağrısını Önler)
   const workshopRefs = {
@@ -318,6 +357,22 @@
     starCountEl.textContent = String(stars);
   }
 
+  function updateHeaderActionLabels() {
+    const cfg = window.VEHICLE_CATALOG[currentVehicleId];
+    if (chipBoltsText) {
+      chipBoltsText.textContent = cfg && cfg.isAppliance ? 'Pompa & Vidalar' : 'Lastik & Vidalar';
+    }
+    if (testDriveText) {
+      if (currentVehicleId === 'washer') {
+        testDriveText.textContent = 'Çamaşır Yıka!';
+      } else if (currentVehicleId === 'dishwasher') {
+        testDriveText.textContent = 'Bulaşık Yıka!';
+      } else {
+        testDriveText.textContent = 'Sürüşe Çık!';
+      }
+    }
+  }
+
   function updateRepairStatusChips() {
     const st = vehicleStates[currentVehicleId];
     const boltsAndTiresFixed = !st.boltsLoose.some(Boolean) && !st.wheelsBroken.some(Boolean);
@@ -327,6 +382,7 @@
     chipBolts.classList.toggle('fixed', boltsAndTiresFixed);
     chipDents.classList.toggle('fixed', bodyAndPaintFixed);
     chipMud.classList.toggle('fixed', mudClean);
+    updateHeaderActionLabels();
   }
 
   function mountOrUpdateVehicle(forceSubPalette = false) {
@@ -508,7 +564,9 @@
 
     mountOrUpdateVehicle(paletteNeedsSync);
 
-    const phraseBank = currentVehicleId === 'washer' ? WASHER_PHRASES : TOOL_PHRASES;
+    let phraseBank = TOOL_PHRASES;
+    if (currentVehicleId === 'washer') phraseBank = WASHER_PHRASES;
+    else if (currentVehicleId === 'dishwasher') phraseBank = DISHWASHER_PHRASES;
     const phrases = phraseBank[toolId] || TOOL_PHRASES.drill;
     setSpeech(phrases[actionCounter % phrases.length], true, false);
   }
@@ -753,9 +811,10 @@
   vehicleTabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       const targetId = tab.dataset.vehicle;
-      if (targetId === currentVehicleId && !isTestDrive) return;
+      if (targetId === currentVehicleId && !isTestDrive && !isAppliancePlay) return;
 
-      if (isTestDrive) stopTestDrive();
+      if (isTestDrive) stopTestDrive(false);
+      if (isAppliancePlay) stopAppliancePlay(false);
 
       vehicleTabs.forEach((t) => {
         t.setAttribute('aria-pressed', t.dataset.vehicle === targetId ? 'true' : 'false');
@@ -776,9 +835,11 @@
 
   // Afacan Modu ("Kirlet / Boz!")
   mischiefBtn.addEventListener('click', () => {
-    if (isTestDrive) stopTestDrive();
+    if (isTestDrive) stopTestDrive(false);
+    if (isAppliancePlay) stopAppliancePlay(false);
+    const cfg = window.VEHICLE_CATALOG[currentVehicleId];
     const st = vehicleStates[currentVehicleId];
-    st.boltsLoose = currentVehicleId === 'washer' ? [true, true, true, true] : [true, true, true];
+    st.boltsLoose = cfg && cfg.isAppliance ? [true, true, true, true] : [true, true, true];
     st.wheelsBroken = [true, false];
     st.primerUnpainted = true;
     st.roofDent = true;
@@ -790,11 +851,494 @@
     mountOrUpdateVehicle(true);
 
     spawnVectorParticles(layoutMetrics.stageCenterX, layoutMetrics.stageCenterY, 'drill', 22);
-    const msg = currentVehicleId === 'washer'
-      ? 'Hahaha! Afacan Aren çamaşır makinesinin vidalarını gevşetti ve kapağa çorap sıkıştırdı! Hadi matkapla tamir edelim!'
-      : 'Hahaha! Afacan Aren kamyonu çamura buladı ve lastiğini patlattı! Hadi baştan tamir edelim!';
+    let msg = 'Hahaha! Afacan Aren kamyonu çamura buladı ve lastiğini patlattı! Hadi baştan tamir edelim!';
+    if (currentVehicleId === 'washer') {
+      msg = 'Hahaha! Afacan Aren çamaşır makinesinin vidalarını gevşetti ve kapağa çorap sıkıştırdı!';
+    } else if (currentVehicleId === 'dishwasher') {
+      msg = 'Hahaha! Afacan Aren bulaşık makinesini köpüğe buladı ve vidalarını gevşetti!';
+    }
     setSpeech(msg, true, true);
   });
+
+  // ÇAMAŞIR & BULAŞIK MAKİNESİ ETKİLEŞİMLİ YIKAMA OYUNU MODU
+  const WASHER_ITEMS = [
+    {
+      name: 'Kırmızı Tişört',
+      svg: (dirty) => `
+        <svg viewBox="0 0 64 56" class="item-card-svg">
+          <path d="M 16 10 L 24 10 C 26 16, 38 16, 40 10 L 48 10 L 58 22 L 50 30 L 45 24 L 45 48 L 19 48 L 19 24 L 14 30 L 6 22 Z"
+            fill="#e63946" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+          ${dirty ? `<circle cx="28" cy="28" r="5" fill="#7f4f24"/><circle cx="37" cy="36" r="4" fill="#582f0e"/>` : ''}
+        </svg>`
+    },
+    {
+      name: 'Sarı Çorap',
+      svg: (dirty) => `
+        <svg viewBox="0 0 64 56" class="item-card-svg">
+          <path d="M 26 8 L 42 8 L 40 34 C 40 44, 18 46, 16 36 C 14 28, 24 26, 26 22 Z"
+            fill="#ffbe0b" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+          <line x1="26" y1="15" x2="41" y2="15" stroke="#ff4d8d" stroke-width="4"/>
+          ${dirty ? `<circle cx="28" cy="34" r="4.5" fill="#7f4f24"/>` : ''}
+        </svg>`
+    },
+    {
+      name: 'Mavi Pantolon',
+      svg: (dirty) => `
+        <svg viewBox="0 0 64 56" class="item-card-svg">
+          <path d="M 18 8 L 46 8 L 50 48 L 36 48 L 32 24 L 28 48 L 14 48 Z"
+            fill="#0077b6" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+          ${dirty ? `<circle cx="23" cy="34" r="4.5" fill="#7f4f24"/><circle cx="41" cy="28" r="4" fill="#582f0e"/>` : ''}
+        </svg>`
+    },
+    {
+      name: 'Mor Havlu',
+      svg: (dirty) => `
+        <svg viewBox="0 0 64 56" class="item-card-svg">
+          <rect x="14" y="10" width="36" height="36" rx="6" fill="#7209b7" stroke="#ffffff" stroke-width="3"/>
+          <line x1="16" y1="18" x2="48" y2="18" stroke="#ffbe0b" stroke-width="3.5"/>
+          <line x1="16" y1="38" x2="48" y2="38" stroke="#ffbe0b" stroke-width="3.5"/>
+          ${dirty ? `<circle cx="32" cy="28" r="5.5" fill="#7f4f24"/>` : ''}
+        </svg>`
+    }
+  ];
+
+  const DISHWASHER_ITEMS = [
+    {
+      name: 'Soslu Tabak',
+      svg: (dirty) => `
+        <svg viewBox="0 0 64 56" class="item-card-svg">
+          <circle cx="32" cy="28" r="21" fill="#ffffff" stroke="#38bdf8" stroke-width="4"/>
+          <circle cx="32" cy="28" r="13" fill="#f1f5f9" stroke="#bae6fd" stroke-width="2"/>
+          ${dirty ? `<circle cx="29" cy="25" r="5" fill="#e63946"/><circle cx="36" cy="32" r="4" fill="#d97706"/>` : ''}
+        </svg>`
+    },
+    {
+      name: 'Çikolatalı Kase',
+      svg: (dirty) => `
+        <svg viewBox="0 0 64 56" class="item-card-svg">
+          <path d="M 10 20 L 54 20 C 52 44, 12 44, 10 20 Z" fill="#ff4d8d" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+          ${dirty ? `<circle cx="28" cy="28" r="4.5" fill="#582f0e"/><circle cx="38" cy="27" r="3.5" fill="#7f4f24"/>` : ''}
+        </svg>`
+    },
+    {
+      name: 'Meyveli Bardak',
+      svg: (dirty) => `
+        <svg viewBox="0 0 64 56" class="item-card-svg">
+          <path d="M 42 18 L 52 18 C 56 18, 56 34, 52 34 L 42 34" fill="none" stroke="#ffffff" stroke-width="4"/>
+          <rect x="16" y="10" width="28" height="36" rx="5" fill="#38bdf8" stroke="#ffffff" stroke-width="3"/>
+          ${dirty ? `<circle cx="30" cy="26" r="5" fill="#d97706"/>` : ''}
+        </svg>`
+    },
+    {
+      name: 'Turuncu Tencere',
+      svg: (dirty) => `
+        <svg viewBox="0 0 64 56" class="item-card-svg">
+          <rect x="8" y="22" width="8" height="8" rx="2" fill="#334155"/>
+          <rect x="48" y="22" width="8" height="8" rx="2" fill="#334155"/>
+          <rect x="14" y="16" width="36" height="28" rx="6" fill="#ff9f1c" stroke="#ffffff" stroke-width="3"/>
+          ${dirty ? `<circle cx="28" cy="30" r="5" fill="#7f4f24"/><circle cx="37" cy="28" r="4" fill="#b45309"/>` : ''}
+        </svg>`
+    }
+  ];
+
+  function renderApplianceInteractiveSVG(appId) {
+    const pState = appliancePlayState[appId];
+    const vState = vehicleStates[appId];
+    const palette = window.PAINT_PALETTE[vState.colorIndex % window.PAINT_PALETTE.length];
+    const bodyColor = vState.primerUnpainted ? '#94a3b8' : palette.primary;
+    const sideColor = vState.primerUnpainted ? '#64748b' : palette.dark;
+    const loadedCount = pState.itemsLoaded.filter(Boolean).length;
+
+    if (appId === 'washer') {
+      return `
+        <svg viewBox="0 0 540 390" role="img" aria-label="Etkileşimli Çamaşır Makinesi">
+          <ellipse cx="270" cy="364" rx="170" ry="15" fill="#0f172a" opacity="0.22"/>
+          <rect x="116" y="22" width="308" height="330" rx="28" fill="#ffffff" stroke="#ffffff" stroke-width="10"/>
+          <rect x="120" y="26" width="300" height="322" rx="24" fill="${bodyColor}"/>
+          <path d="M 396 26 L 400 26 C 412 26, 420 35, 420 46 L 420 328 C 420 339, 412 348, 400 348 L 396 348 Z" fill="${sideColor}" opacity="0.85"/>
+
+          <!-- Üst Kontrol Paneli ve Deterjan Çekmecesi (Dokunulabilir!) -->
+          <path d="M 120 48 C 120 35, 130 26, 142 26 L 398 26 C 410 26, 420 35, 420 48 L 420 96 L 120 96 Z" fill="#f1f5f9"/>
+          <line x1="120" y1="96" x2="420" y2="96" stroke="#94a3b8" stroke-width="4"/>
+
+          <!-- Sol: Deterjan Çekmecesi -->
+          <g class="app-click-zone" data-app-zone="detergent" style="cursor: pointer;">
+            <rect x="136" y="40" width="96" height="42" rx="9" fill="${pState.detergentAdded ? '#bae6fd' : '#e2e8f0'}" stroke="${pState.detergentAdded ? '#0284c7' : '#64748b'}" stroke-width="3"/>
+            <rect x="156" y="56" width="56" height="10" rx="5" fill="#0284c7"/>
+            ${pState.detergentAdded ? `
+              <circle cx="152" cy="40" r="9" fill="#38bdf8" stroke="#ffffff" stroke-width="2"/>
+              <circle cx="172" cy="36" r="7" fill="#caf0f8" stroke="#ffffff" stroke-width="2"/>
+              <circle cx="212" cy="40" r="8" fill="#38bdf8" stroke="#ffffff" stroke-width="2"/>
+            ` : ''}
+          </g>
+
+          <!-- Orta: Dijital LED Gösterge -->
+          <rect x="244" y="40" width="96" height="42" rx="9" fill="#0f172a" stroke="#475569" stroke-width="3"/>
+          <circle cx="262" cy="61" r="6" fill="${pState.isClean ? '#38b000' : pState.isWashing ? '#38bdf8' : '#ffbe0b'}"/>
+          <text x="298" y="67" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="900" font-size="18" fill="#38bdf8">
+            ${pState.isClean ? 'TEMİZ' : pState.isWashing ? 'YIKIYOR' : `${loadedCount}/4`}
+          </text>
+
+          <!-- Sağ: Başlat Kadranı -->
+          <g class="app-click-zone" data-app-zone="start" style="cursor: pointer;">
+            <circle cx="378" cy="61" r="20" fill="#38b000" stroke="#ffffff" stroke-width="3"/>
+            <polygon points="373,52 389,61 373,70" fill="#ffffff"/>
+          </g>
+
+          <!-- ORTA DEV TAMBUR (Dokununca Çamaşır Ekler!) -->
+          <g transform="translate(270, 218)" class="app-click-zone" data-app-zone="drum" style="cursor: pointer;">
+            <circle cx="0" cy="0" r="98" fill="#1e293b"/>
+            <circle cx="0" cy="0" r="84" fill="#0f172a"/>
+
+            <g class="app-spin-node">
+              <circle cx="0" cy="0" r="78" fill="#334155"/>
+              <circle cx="0" cy="-58" r="5" fill="#0f172a"/>
+              <circle cx="50" cy="-29" r="5" fill="#0f172a"/>
+              <circle cx="50" cy="29" r="5" fill="#0f172a"/>
+              <circle cx="0" cy="58" r="5" fill="#0f172a"/>
+              <circle cx="-50" cy="29" r="5" fill="#0f172a"/>
+              <circle cx="-50" cy="-29" r="5" fill="#0f172a"/>
+
+              <!-- Tambura Atılan Çamaşırlar -->
+              ${pState.itemsLoaded[0] ? `
+                <g transform="translate(-26, -20) rotate(-14)">
+                  <path d="M -22 -14 L 22 -14 L 28 16 L -28 16 Z" fill="#e63946" stroke="#ffffff" stroke-width="2.5"/>
+                  ${!pState.isClean && !pState.isWashing ? `<circle cx="-6" cy="2" r="5" fill="#7f4f24"/>` : ''}
+                </g>
+              ` : ''}
+              ${pState.itemsLoaded[1] ? `
+                <g transform="translate(26, -18) rotate(18)">
+                  <path d="M -12 -18 L 8 -18 L 6 14 C 6 24, -18 24, -18 14 Z" fill="#ffbe0b" stroke="#ffffff" stroke-width="2.5"/>
+                  ${!pState.isClean && !pState.isWashing ? `<circle cx="-4" cy="6" r="4" fill="#7f4f24"/>` : ''}
+                </g>
+              ` : ''}
+              ${pState.itemsLoaded[2] ? `
+                <g transform="translate(-22, 24) rotate(10)">
+                  <path d="M -20 -14 L 20 -14 L 24 18 L 4 18 L 0 0 L -4 18 L -24 18 Z" fill="#0077b6" stroke="#ffffff" stroke-width="2.5"/>
+                  ${!pState.isClean && !pState.isWashing ? `<circle cx="-8" cy="4" r="4.5" fill="#7f4f24"/>` : ''}
+                </g>
+              ` : ''}
+              ${pState.itemsLoaded[3] ? `
+                <g transform="translate(22, 22) rotate(-12)">
+                  <rect x="-22" y="-16" width="44" height="32" rx="6" fill="#7209b7" stroke="#ffffff" stroke-width="2.5"/>
+                  ${!pState.isClean && !pState.isWashing ? `<circle cx="0" cy="0" r="5" fill="#7f4f24"/>` : ''}
+                </g>
+              ` : ''}
+
+              <!-- Yıkama Sırasında Köpüklü Su Dalgası -->
+              ${(pState.isWashing || pState.detergentAdded) ? `
+                <path d="M -74 12 Q -36 -14 0 12 T 74 12 A 74 74 0 0 1 -74 12 Z" fill="#38bdf8" opacity="${pState.isWashing ? '0.86' : '0.45'}"/>
+                <circle cx="-28" cy="-12" r="10" fill="#ffffff" opacity="0.88"/>
+                <circle cx="24" cy="-22" r="8" fill="#caf0f8" opacity="0.92"/>
+                <circle cx="10" cy="18" r="11" fill="#ffffff" opacity="0.82"/>
+                <circle cx="-32" cy="24" r="8" fill="#caf0f8" opacity="0.88"/>
+              ` : ''}
+            </g>
+
+            <!-- Cam Kapak Çerçevesi -->
+            <circle cx="0" cy="0" r="88" fill="none" stroke="#cbd5e1" stroke-width="14"/>
+            <circle cx="0" cy="0" r="88" fill="none" stroke="#f8fafc" stroke-width="5"/>
+            <path d="M -52 -36 A 64 64 0 0 1 42 -46" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+            <rect x="74" y="-18" width="16" height="36" rx="6" fill="#334155" stroke="#ffffff" stroke-width="2.5"/>
+
+            ${pState.isClean ? `
+              ${window.renderSparkleStar(-38, -32, 16, 0.1)}
+              ${window.renderSparkleStar(38, -28, 14, 0.3)}
+              ${window.renderSparkleStar(0, 32, 16, 0.5)}
+            ` : ''}
+          </g>
+        </svg>
+      `;
+    }
+
+    // BULAŞIK MAKİNESİ YIKAMA SAHNESİ
+    return `
+      <svg viewBox="0 0 540 390" role="img" aria-label="Etkileşimli Bulaşık Makinesi">
+        <ellipse cx="270" cy="364" rx="175" ry="15" fill="#0f172a" opacity="0.22"/>
+        <rect x="112" y="22" width="316" height="330" rx="22" fill="#ffffff" stroke="#ffffff" stroke-width="10"/>
+        <rect x="116" y="26" width="308" height="322" rx="18" fill="${bodyColor}"/>
+        <path d="M 398 26 L 406 26 C 416 26, 424 34, 424 44 L 424 330 C 424 340, 416 348, 406 348 L 398 348 Z" fill="${sideColor}" opacity="0.85"/>
+
+        <!-- Üst Ankastre Kontrol Paneli -->
+        <path d="M 116 44 C 116 34, 124 26, 134 26 L 406 26 C 416 26, 424 34, 424 44 L 424 92 L 116 92 Z" fill="#1e293b"/>
+        <line x1="116" y1="92" x2="424" y2="92" stroke="#94a3b8" stroke-width="4"/>
+
+        <!-- Sol: Tablet Deterjan Yuvası (Dokunulabilir!) -->
+        <g class="app-click-zone" data-app-zone="detergent" style="cursor: pointer;">
+          <rect x="132" y="38" width="92" height="40" rx="8" fill="${pState.detergentAdded ? '#fef08a' : '#334155'}" stroke="#ffffff" stroke-width="2.5"/>
+          <circle cx="156" cy="58" r="10" fill="#38bdf8"/>
+          <circle cx="182" cy="58" r="10" fill="#ff4d8d"/>
+          <circle cx="204" cy="58" r="7" fill="#38b000"/>
+        </g>
+
+        <!-- Orta: Dijital Ekran -->
+        <rect x="236" y="38" width="110" height="40" rx="8" fill="#0f172a" stroke="#475569" stroke-width="2.5"/>
+        <text x="291" y="64" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="900" font-size="17" fill="#38bdf8">
+          ${pState.isClean ? 'TERTEMİZ' : pState.isWashing ? '65°C YIKIYOR' : `${loadedCount}/4 BULAŞIK`}
+        </text>
+
+        <!-- Sağ: Başlat Düğmesi -->
+        <g class="app-click-zone" data-app-zone="start" style="cursor: pointer;">
+          <circle cx="384" cy="58" r="20" fill="#38b000" stroke="#ffffff" stroke-width="3"/>
+          <polygon points="379,49 395,58 379,67" fill="#ffffff"/>
+        </g>
+
+        <!-- BULAŞIK MAKİNESİ İÇ SEPETLER VE FISKİYE (Dokununca Bulaşık Dizer!) -->
+        <g transform="translate(270, 220)" class="app-click-zone" data-app-zone="drum" style="cursor: pointer;">
+          <rect x="-126" y="-102" width="252" height="204" rx="16" fill="#0f172a" stroke="#cbd5e1" stroke-width="9"/>
+          <rect x="-116" y="-92" width="232" height="184" rx="12" fill="#1e293b"/>
+
+          <!-- ÜST SEPET (Kase ve Bardak) -->
+          <g transform="translate(0, -44)">
+            ${pState.itemsLoaded[1] ? `
+              <g transform="translate(-52, -8)">
+                <path d="M -28 -12 L 28 -12 C 24 18, -24 18, -28 -12 Z" fill="#ff4d8d" stroke="#ffffff" stroke-width="3"/>
+                ${!pState.isClean && !pState.isWashing ? `<circle cx="-6" cy="-2" r="5" fill="#582f0e"/><circle cx="8" cy="0" r="4" fill="#7f4f24"/>` : ''}
+              </g>
+            ` : ''}
+            ${pState.itemsLoaded[2] ? `
+              <g transform="translate(42, -16)">
+                <rect x="-18" y="-12" width="36" height="36" rx="6" fill="#38bdf8" stroke="#ffffff" stroke-width="3"/>
+                ${!pState.isClean && !pState.isWashing ? `<circle cx="0" cy="6" r="5.5" fill="#d97706"/>` : ''}
+              </g>
+            ` : ''}
+            <line x1="-106" y1="16" x2="106" y2="16" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
+            <line x1="-80" y1="2" x2="-80" y2="16" stroke="#cbd5e1" stroke-width="3.5" stroke-linecap="round"/>
+            <line x1="-40" y1="2" x2="-40" y2="16" stroke="#cbd5e1" stroke-width="3.5" stroke-linecap="round"/>
+            <line x1="0" y1="2" x2="0" y2="16" stroke="#cbd5e1" stroke-width="3.5" stroke-linecap="round"/>
+            <line x1="40" y1="2" x2="40" y2="16" stroke="#cbd5e1" stroke-width="3.5" stroke-linecap="round"/>
+            <line x1="80" y1="2" x2="80" y2="16" stroke="#cbd5e1" stroke-width="3.5" stroke-linecap="round"/>
+          </g>
+
+          <!-- ALT SEPET (Soslu Tabaklar ve Tencere) -->
+          <g transform="translate(0, 48)">
+            ${pState.itemsLoaded[0] ? `
+              <g transform="translate(-54, -4)">
+                <ellipse cx="-20" cy="0" rx="10" ry="28" fill="#ffffff" stroke="#38bdf8" stroke-width="3"/>
+                <ellipse cx="4" cy="0" rx="10" ry="28" fill="#caf0f8" stroke="#0077b6" stroke-width="3"/>
+                <ellipse cx="28" cy="0" rx="10" ry="28" fill="#ffffff" stroke="#38bdf8" stroke-width="3"/>
+                ${!pState.isClean && !pState.isWashing ? `<circle cx="-20" cy="-4" r="5" fill="#e63946"/><circle cx="28" cy="4" r="5" fill="#d97706"/>` : ''}
+              </g>
+            ` : ''}
+            ${pState.itemsLoaded[3] ? `
+              <g transform="translate(48, 0)">
+                <rect x="-32" y="-16" width="64" height="36" rx="8" fill="#ff9f1c" stroke="#ffffff" stroke-width="3"/>
+                ${!pState.isClean && !pState.isWashing ? `<circle cx="-8" cy="2" r="5.5" fill="#7f4f24"/><circle cx="10" cy="4" r="4.5" fill="#b45309"/>` : ''}
+              </g>
+            ` : ''}
+            <line x1="-106" y1="26" x2="106" y2="26" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
+          </g>
+
+          <!-- 60FPS DÖNEN ÇİFT SU FISKİYESİ PERVANESİ -->
+          <g transform="translate(0, 4)">
+            <g class="app-spin-node">
+              <rect x="-86" y="-7" width="172" height="14" rx="7" fill="#38bdf8" stroke="#ffffff" stroke-width="3"/>
+              <rect x="-7" y="-58" width="14" height="116" rx="7" fill="#00b4d8" stroke="#ffffff" stroke-width="3"/>
+              <circle cx="0" cy="0" r="14" fill="#ffbe0b" stroke="#ffffff" stroke-width="3"/>
+              ${pState.isWashing ? `
+                <circle cx="-64" cy="-24" r="9" fill="#caf0f8" opacity="0.92"/>
+                <circle cx="64" cy="24" r="9" fill="#ffffff" opacity="0.92"/>
+                <circle cx="28" cy="-44" r="8" fill="#38bdf8" opacity="0.9"/>
+                <circle cx="-32" cy="44" r="10" fill="#caf0f8" opacity="0.9"/>
+              ` : ''}
+            </g>
+          </g>
+
+          ${pState.isClean ? `
+            ${window.renderSparkleStar(-56, -48, 16, 0.1)}
+            ${window.renderSparkleStar(52, -44, 15, 0.3)}
+            ${window.renderSparkleStar(-48, 42, 16, 0.2)}
+            ${window.renderSparkleStar(52, 42, 16, 0.5)}
+          ` : ''}
+        </g>
+      </svg>
+    `;
+  }
+
+  function syncAppliancePlayDOM() {
+    if (!isAppliancePlay) return;
+    const appId = currentVehicleId === 'dishwasher' ? 'dishwasher' : 'washer';
+    const pState = appliancePlayState[appId];
+    const catalog = appId === 'washer' ? WASHER_ITEMS : DISHWASHER_ITEMS;
+
+    const itemCardsHtml = catalog.map((item, idx) => {
+      const loaded = pState.itemsLoaded[idx];
+      return `
+        <button type="button" class="appliance-item-card ${loaded ? 'loaded' : ''}" data-app-item="${idx}">
+          ${item.svg(!loaded && !pState.isClean)}
+          <span>${loaded ? `${item.name} (Eklendi)` : item.name}</span>
+        </button>
+      `;
+    }).join('');
+
+    const detLabel = appId === 'washer'
+      ? (pState.detergentAdded ? 'Deterjan & Köpük Hazır!' : '+ Deterjan & Yumuşatıcı Koy')
+      : (pState.detergentAdded ? 'Parlatıcı Tablet Hazır!' : '+ Parlatıcı Bulaşık Tableti Koy');
+
+    const detCardHtml = `
+      <button type="button" class="appliance-item-card detergent-card ${pState.detergentAdded ? 'loaded' : ''}" data-app-detergent="true">
+        <span>${detLabel}</span>
+      </button>
+    `;
+
+    applianceItemsTray.innerHTML = itemCardsHtml + detCardHtml;
+    applianceMachineView.innerHTML = renderApplianceInteractiveSVG(appId);
+    appSpinNodes = Array.from(applianceMachineView.querySelectorAll('.app-spin-node'));
+
+    if (appStartWashText) {
+      appStartWashText.textContent = pState.isWashing
+        ? 'KÖPÜK TURBO!'
+        : pState.isClean
+          ? 'TEKRAR YIKA!'
+          : 'YIKAMAYI BAŞLAT!';
+    }
+
+    applianceItemsTray.querySelectorAll('[data-app-item]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const idx = Number(btn.dataset.appItem);
+        loadApplianceItem(idx, e.clientX || layoutMetrics.stageCenterX, e.clientY || layoutMetrics.stageCenterY);
+      });
+    });
+
+    const detBtn = applianceItemsTray.querySelector('[data-app-detergent]');
+    if (detBtn) {
+      detBtn.addEventListener('click', (e) => {
+        addApplianceDetergent(e.clientX || layoutMetrics.stageCenterX, e.clientY || layoutMetrics.stageCenterY);
+      });
+    }
+
+    applianceMachineView.querySelectorAll('.app-click-zone').forEach((zone) => {
+      zone.addEventListener('click', (e) => {
+        const zType = zone.dataset.appZone;
+        if (zType === 'detergent') {
+          addApplianceDetergent(e.clientX, e.clientY);
+        } else if (zType === 'start') {
+          triggerApplianceWashCycle();
+        } else {
+          const nextIdx = pState.itemsLoaded.findIndex((v) => !v);
+          if (nextIdx !== -1) {
+            loadApplianceItem(nextIdx, e.clientX, e.clientY);
+          } else if (!pState.detergentAdded) {
+            addApplianceDetergent(e.clientX, e.clientY);
+          } else {
+            triggerApplianceWashCycle();
+          }
+        }
+      });
+    });
+  }
+
+  function loadApplianceItem(idx, clientX, clientY) {
+    const appId = currentVehicleId === 'dishwasher' ? 'dishwasher' : 'washer';
+    const pState = appliancePlayState[appId];
+    if (pState.isWashing) return;
+    pState.isClean = false;
+    pState.itemsLoaded[idx] = true;
+    addStars(1);
+    window.arenAudio.playWacky();
+    spawnVectorParticles(clientX, clientY, 'wacky', 16);
+    syncAppliancePlayDOM();
+
+    const msg = appId === 'washer'
+      ? 'Hop! Kirli çamaşırı çamaşır makinesinin tamburuna attık Usta Aren!'
+      : 'Harika! Kirli bulaşığı bulaşık makinesinin sepetine yerleştirdik Usta Aren!';
+    setSpeech(msg, true, true);
+  }
+
+  function addApplianceDetergent(clientX, clientY) {
+    const appId = currentVehicleId === 'dishwasher' ? 'dishwasher' : 'washer';
+    const pState = appliancePlayState[appId];
+    if (pState.isWashing) return;
+    pState.isClean = false;
+    pState.detergentAdded = true;
+    addStars(1);
+    window.arenAudio.playWaterSplash();
+    spawnVectorParticles(clientX, clientY, 'wash', 18);
+    syncAppliancePlayDOM();
+
+    const msg = appId === 'washer'
+      ? 'Mis kokulu sıvı deterjanı ve yumuşatıcıyı çekmeceye koyduk Usta Aren!'
+      : 'Parlatıcı bulaşık tabletini deterjan kutusuna taktık Usta Aren!';
+    setSpeech(msg, true, true);
+  }
+
+  function triggerApplianceWashCycle() {
+    const appId = currentVehicleId === 'dishwasher' ? 'dishwasher' : 'washer';
+    const pState = appliancePlayState[appId];
+
+    if (pState.isWashing) {
+      pState.washTimer = Math.max(40, pState.washTimer - 45);
+      window.arenAudio.playWaterSplash();
+      spawnVectorParticles(layoutMetrics.stageCenterX, layoutMetrics.stageCenterY, 'wash', 20);
+      return;
+    }
+
+    // Eğer hiç eşya konmadıysa ilk tıklamada uyar, ama 3 yaş çocuğunun takılmaması için otomatik 2 eşya da ekle!
+    if (!pState.itemsLoaded.some(Boolean)) {
+      pState.itemsLoaded = [true, true, true, true];
+      window.arenAudio.playWacky();
+      syncAppliancePlayDOM();
+    }
+    if (!pState.detergentAdded) {
+      pState.detergentAdded = true;
+    }
+
+    pState.isClean = false;
+    pState.isWashing = true;
+    pState.washTimer = 240; // ~4 saniye 60FPS yıkama döngüsü
+    window.arenAudio.playWaterSplash();
+    spawnVectorParticles(layoutMetrics.stageCenterX, layoutMetrics.stageCenterY, 'wash', 22);
+    syncAppliancePlayDOM();
+
+    const startMsg = appId === 'washer'
+      ? 'Çamaşır makinesi çalışıyor! Su doluyor, köpüklerle tambur dönüyor Usta Aren!'
+      : 'Bulaşık makinesi çalışıyor! Sıcak su fıskiyeleri dönüyor, bulaşıklar yıkanıyor Usta Aren!';
+    setSpeech(startMsg, true, true);
+  }
+
+  function resetApplianceItems() {
+    const appId = currentVehicleId === 'dishwasher' ? 'dishwasher' : 'washer';
+    const pState = appliancePlayState[appId];
+    pState.itemsLoaded = [false, false, false, false];
+    pState.detergentAdded = false;
+    pState.isWashing = false;
+    pState.isClean = false;
+    pState.washTimer = 0;
+    window.arenAudio.playWrench();
+    syncAppliancePlayDOM();
+
+    const msg = appId === 'washer'
+      ? 'Çamaşır yıkama zamanı Usta Aren! Kirli çamaşırları tambura at, deterjanı koy ve yıkamayı başlat!'
+      : 'Bulaşık yıkama zamanı Usta Aren! Kirli tabakları ve bardakları sepete diz, tableti koy ve makineyi çalıştır!';
+    setSpeech(msg, true, true);
+  }
+
+  function startAppliancePlay() {
+    isAppliancePlay = true;
+    appliancePlayStage.hidden = false;
+    subPaletteBar.hidden = true;
+    syncAppliancePlayDOM();
+    refreshLayoutMetrics();
+    window.arenAudio.playVictory();
+
+    const msg = currentVehicleId === 'washer'
+      ? 'Çamaşır yıkama zamanı Usta Aren! Kirli çamaşırları tambura at, deterjanı koy ve yıkamayı başlat!'
+      : 'Bulaşık yıkama zamanı Usta Aren! Kirli tabakları ve bardakları sepete diz, tableti koy ve makineyi çalıştır!';
+    setSpeech(msg, true, true);
+  }
+
+  function stopAppliancePlay(announce = true) {
+    isAppliancePlay = false;
+    appliancePlayStage.hidden = true;
+    const appId = currentVehicleId === 'dishwasher' ? 'dishwasher' : 'washer';
+    appliancePlayState[appId].isWashing = false;
+    mountOrUpdateVehicle(true);
+    renderSubPalette();
+    refreshLayoutMetrics();
+    if (announce) {
+      setSpeech('Tamirhaneye döndük Usta Aren! Şimdi neyi tamir edelim?', true, true);
+    }
+  }
 
   // Test Sürüşü Engelleri (Saf Vektör Beyaz Sticker Çerçeveli)
   function createObstacleSVG(type) {
@@ -849,7 +1393,7 @@
     setSpeech('Test sürüşü başladı Usta Aren! Kutuları devirmek için ekrana dokun veya Zıpla düğmesine bas!', true, true);
   }
 
-  function stopTestDrive() {
+  function stopTestDrive(announce = true) {
     isTestDrive = false;
     testDriveStage.hidden = true;
     obstaclesContainer.innerHTML = '';
@@ -857,7 +1401,9 @@
     mountOrUpdateVehicle(true);
     renderSubPalette();
     refreshLayoutMetrics();
-    setSpeech('Tamirhaneye döndük Usta Aren! Şimdi hangi aracı tamir edelim?', true, true);
+    if (announce) {
+      setSpeech('Tamirhaneye döndük Usta Aren! Şimdi neyi tamir edelim?', true, true);
+    }
   }
 
   function triggerDriveJump() {
@@ -872,15 +1418,36 @@
   }
 
   testDriveBtn.addEventListener('click', () => {
-    if (isTestDrive) stopTestDrive();
+    const cfg = window.VEHICLE_CATALOG[currentVehicleId];
+    if (cfg && cfg.isAppliance) {
+      if (isAppliancePlay) stopAppliancePlay(true);
+      else startAppliancePlay();
+      return;
+    }
+    if (isTestDrive) stopTestDrive(true);
     else startTestDrive();
+  });
+
+  appStartWashBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    triggerApplianceWashCycle();
+  });
+
+  appResetItemsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    resetApplianceItems();
+  });
+
+  appBackGarageBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    stopAppliancePlay(true);
   });
 
   driveHornBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     window.arenAudio.playHorn();
     spawnVectorParticles(layoutMetrics.carRight - 20, layoutMetrics.carTop + 40, 'wash', 16);
-    setSpeech('DÜÜÜT DÜÜÜT! Yolu açın Usta Aren hızla geliyor!', true, false);
+    setSpeech('Düt düüüt! Yolu açın Usta Aren hızla geliyor!', true, false);
   });
 
   driveJumpBtn.addEventListener('click', (e) => {
@@ -954,7 +1521,38 @@
 
   // Ana 60FPS Oyun Döngüsü (Sıfır Layout Thrashing, Boştayken Sıfır DOM/Canvas İşlemi)
   function mainLoop() {
-    if (!isTestDrive) {
+    if (isAppliancePlay) {
+      const appId = currentVehicleId === 'dishwasher' ? 'dishwasher' : 'washer';
+      const pState = appliancePlayState[appId];
+      if (pState.isWashing) {
+        pState.spinAngle = (pState.spinAngle + 14) % 360;
+        const rotStr = `rotate(${pState.spinAngle.toFixed(1)})`;
+        for (let i = 0; i < appSpinNodes.length; i++) {
+          appSpinNodes[i].setAttribute('transform', rotStr);
+        }
+        if (pState.washTimer % 28 === 0) {
+          spawnVectorParticles(
+            layoutMetrics.vw * (0.48 + (Math.random() - 0.5) * 0.18),
+            layoutMetrics.vh * (0.48 + (Math.random() - 0.5) * 0.18),
+            'wash',
+            10
+          );
+        }
+        pState.washTimer -= 1;
+        if (pState.washTimer <= 0) {
+          pState.isWashing = false;
+          pState.isClean = true;
+          addStars(5);
+          window.arenAudio.playVictory();
+          spawnVectorParticles(layoutMetrics.vw * 0.55, layoutMetrics.vh * 0.48, 'paint', 24);
+          syncAppliancePlayDOM();
+          const doneMsg = appId === 'washer'
+            ? 'Yaşasın! Bütün çamaşırlar bembeyaz ve mis kokulu yıkandı, harikasın Usta Aren!'
+            : 'Yaşasın! Bütün tabaklar ve bardaklar gıcır gıcır tertemiz oldu, aferin Usta Aren!';
+          setSpeech(doneMsg, true, true);
+        }
+      }
+    } else if (!isTestDrive) {
       if (rigPhysics.awake) {
         const springForceY = -0.18 * rigPhysics.y;
         rigPhysics.vy = (rigPhysics.vy + springForceY) * 0.82;
@@ -1152,6 +1750,6 @@
     window.arenAudio.playVictory();
     impulseVehicle(16, -4, 24);
     spawnVectorParticles(layoutMetrics.stageCenterX, layoutMetrics.stageCenterY, 'drill', 22);
-    setSpeech('Merhaba Usta Aren! Çılgın Tamirhaneye hoş geldin! Hadi Dev Kamyonu tamir edelim!', true, true);
+    setSpeech('Merhaba Usta Aren! Çılgın Tamirhaneye hoş geldin! Hadi tamire başlayalım!', true, true);
   });
 })();
