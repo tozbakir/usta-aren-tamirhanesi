@@ -1,5 +1,5 @@
-// Usta Aren'in Çılgın Tamirhanesi - Tablet Optimize Ses & Türkçe Konuşma Motoru
-// (iOS/iPadOS/Android üzerinde speechSynthesis.cancel() IPC bloklaması tamamen kaldırıldı)
+// Usta Aren'in Çılgın Tamirhanesi - Ses & Türkçe Konuşma Motoru
+// (iPadOS / iOS Safari User Activation uyumlu senkron speechSynthesis)
 
 class ArenAudioEngine {
   constructor() {
@@ -9,7 +9,6 @@ class ArenAudioEngine {
     this.lastSpeechTime = 0;
     this.lastSfxTime = 0;
     this.hornIndex = 0;
-    this.speechTimer = null;
     this.initVoices();
   }
 
@@ -50,40 +49,40 @@ class ArenAudioEngine {
     return this.enabled;
   }
 
-  // Tabletlerde Ana İş Parçacığını (Main Thread) Bloklamayan Asenkron Konuşma
+  // iPadOS / iOS Safari User Gesture içinde doğrudan senkron çağrılmalıdır (setTimeout içinde çağrılırsa Safari sesi engeller!)
   speak(text, force = false) {
     if (!this.enabled || !('speechSynthesis' in window)) return;
     const now = performance.now();
-    if (!force && now - this.lastSpeechTime < 3400) return;
-
-    // KritiK Tablet Optimizasyonu: iOS/Android'de speechSynthesis.cancel() senkron IPC bloklaması yapar.
-    // Normal etkileşimlerde konuşma devam ediyorsa kesmek yerine atla!
-    if (!force && window.speechSynthesis.speaking) return;
+    if (!force && now - this.lastSpeechTime < 2100) return;
     this.lastSpeechTime = now;
 
-    if (this.speechTimer) clearTimeout(this.speechTimer);
-    this.speechTimer = setTimeout(() => {
-      try {
-        if (force && window.speechSynthesis.speaking) {
-          window.speechSynthesis.cancel();
-        }
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'tr-TR';
-        if (this.trVoice) {
-          utter.voice = this.trVoice;
-        }
-        utter.rate = 1.04;
-        utter.pitch = 1.1;
-        utter.volume = 1.0;
-        window.speechSynthesis.speak(utter);
-      } catch (_) {}
-    }, 24);
+    try {
+      if (!this.trVoice) {
+        const voices = window.speechSynthesis.getVoices();
+        this.trVoice =
+          voices.find((v) => v.lang.toLowerCase().startsWith('tr') && v.name.toLowerCase().includes('yelda')) ||
+          voices.find((v) => v.lang.toLowerCase().startsWith('tr')) ||
+          null;
+      }
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'tr-TR';
+      if (this.trVoice) {
+        utter.voice = this.trVoice;
+      }
+      utter.rate = 1.02;
+      utter.pitch = 1.12;
+      utter.volume = 1.0;
+      window.speechSynthesis.speak(utter);
+    } catch (_) {
+      // Kısıtlı webview hatalarını yoksay
+    }
   }
 
   canPlaySfx() {
     if (!this.enabled) return false;
     const now = performance.now();
-    if (now - this.lastSfxTime < 90) return false;
+    if (now - this.lastSfxTime < 75) return false;
     this.lastSfxTime = now;
     this.ensureContext();
     return Boolean(this.ctx);
