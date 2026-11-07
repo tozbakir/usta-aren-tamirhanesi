@@ -526,7 +526,8 @@
       subPaletteBar.innerHTML = colorBtns + decalBtns;
 
       subPaletteBar.querySelectorAll('[data-paint-idx]').forEach((btn) => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
           const curSt = vehicleStates[currentVehicleId];
           curSt.colorIndex = Number(btn.dataset.paintIdx);
           curSt.primerUnpainted = false;
@@ -538,7 +539,8 @@
       });
 
       subPaletteBar.querySelectorAll('[data-decal-key]').forEach((btn) => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
           const curSt = vehicleStates[currentVehicleId];
           const key = btn.dataset.decalKey;
           if (curSt.decals.length >= 3) curSt.decals.shift();
@@ -589,7 +591,8 @@
       subPaletteBar.innerHTML = wBtns + rBtns;
 
       subPaletteBar.querySelectorAll('[data-wheel-type]').forEach((btn) => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
           const curSt = vehicleStates[currentVehicleId];
           curSt.wheelType = btn.dataset.wheelType;
           curSt.wheelsBroken = [false, false];
@@ -601,7 +604,8 @@
       });
 
       subPaletteBar.querySelectorAll('[data-roof-type]').forEach((btn) => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
           const curSt = vehicleStates[currentVehicleId];
           curSt.roofType = btn.dataset.roofType;
           curSt.roofDent = false;
@@ -717,7 +721,8 @@
   // Araç Sekmesi Değiştirme
   const vehicleTabs = document.querySelectorAll('.vehicle-tab');
   vehicleTabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
+    tab.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
       const targetId = tab.dataset.vehicle;
       if (targetId === currentVehicleId && !isTestDrive) return;
 
@@ -741,7 +746,8 @@
   });
 
   // Afacan Modu ("Kirlet / Boz!")
-  mischiefBtn.addEventListener('click', () => {
+  mischiefBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     if (isTestDrive) stopTestDrive();
     const st = vehicleStates[currentVehicleId];
     st.boltsLoose = [true, true, true];
@@ -834,38 +840,82 @@
     addStars(1);
   }
 
-  testDriveBtn.addEventListener('click', () => {
+  testDriveBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     if (isTestDrive) stopTestDrive();
     else startTestDrive();
   });
 
-  driveHornBtn.addEventListener('click', (e) => {
+  driveHornBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     e.stopPropagation();
     window.arenAudio.playHorn();
     spawnVectorParticles(layoutMetrics.carRight - 20, layoutMetrics.carTop + 40, 'wash', 16);
     setSpeech('DÜÜÜT DÜÜÜT! Yolu açın Usta Aren hızla geliyor!', true, false);
   });
 
-  driveJumpBtn.addEventListener('click', (e) => {
+  driveJumpBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     e.stopPropagation();
     triggerDriveJump();
     setSpeech('Süper Turbo Zıplama! Harikasın Aren Usta!', true, false);
   });
 
-  roadTrack.addEventListener('pointerdown', () => {
+  roadTrack.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     triggerDriveJump();
   });
 
-  backGarageBtn.addEventListener('click', (e) => {
+  backGarageBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     e.stopPropagation();
     stopTestDrive();
   });
 
-  soundToggleBtn.addEventListener('click', () => {
+  soundToggleBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     const active = window.arenAudio.toggleMute();
     soundToggleBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
     soundIconSlot.innerHTML = active ? window.SVG_ICONS.soundOn : window.SVG_ICONS.soundOff;
   });
+
+  // iPadOS / iOS Safari ve Android İçin Çift Dokunma (Double-Tap) ve Çimdikleme (Pinch) Zoom Engeli
+  let lastTouchEndTime = 0;
+  document.addEventListener('dblclick', (e) => {
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('gesturestart', (e) => {
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('gesturechange', (e) => {
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('gestureend', (e) => {
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches && e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchend', (e) => {
+    const now = performance.now();
+    if (now - lastTouchEndTime <= 380) {
+      e.preventDefault();
+    }
+    lastTouchEndTime = now;
+  }, { passive: false });
 
   window.addEventListener('keydown', (event) => {
     if (welcomeDialog.open) {
@@ -1078,7 +1128,8 @@
   welcomeDialog.showModal();
   requestAnimationFrame(mainLoop);
 
-  startGameBtn.addEventListener('click', () => {
+  function openWorkshopFromModal() {
+    if (!welcomeDialog.open) return;
     welcomeDialog.close();
     refreshLayoutMetrics();
     window.arenAudio.ensureContext();
@@ -1086,5 +1137,11 @@
     impulseVehicle(16, -4, 24);
     spawnVectorParticles(layoutMetrics.stageCenterX, layoutMetrics.stageCenterY, 'drill', 22);
     setSpeech('Merhaba Usta Aren! Çılgın Tamirhaneye hoş geldin! Hadi Dev Kamyonu tamir edelim!', true, true);
+  }
+
+  startGameBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    openWorkshopFromModal();
   });
+  startGameBtn.addEventListener('click', openWorkshopFromModal);
 })();
