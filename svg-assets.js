@@ -255,6 +255,42 @@ const SVG_ICONS = {
     </svg>
   `,
 
+  // 7. BEYAZ EŞYA BORU ANAHTARI (Çamaşır ve Bulaşık Makinesi Su Borusu Tamiri İçin)
+  pipeWrench: `
+    <svg viewBox="0 0 110 100" class="svg-icon tool-svg" aria-hidden="true">
+      <g stroke="#ffffff" stroke-width="8" stroke-linejoin="round" stroke-linecap="round" fill="#ffffff">
+        <rect x="14" y="40" width="52" height="18" rx="8" transform="rotate(-18 50 50)"/>
+        <path d="M 56 26 L 88 26 L 88 70 L 56 70 L 56 54 L 74 54 L 74 42 L 56 42 Z" transform="rotate(-18 50 50)"/>
+      </g>
+      <g transform="rotate(-18 50 50)">
+        <rect x="14" y="40" width="52" height="18" rx="8" fill="#e63946"/>
+        <rect x="20" y="44" width="32" height="5" rx="2.5" fill="#ff8fa3"/>
+        <path d="M 56 26 L 88 26 L 88 70 L 56 70 L 56 54 L 74 54 L 74 42 L 56 42 Z" fill="#94a3b8" stroke="#334155" stroke-width="2.5"/>
+        <circle cx="84" cy="48" r="6" fill="#38b000"/>
+      </g>
+    </svg>
+  `,
+
+  // 8. BEYAZ EŞYA KÖPÜKLÜ SÜNGER (Çamaşır ve Bulaşık Makinesi Temizliği İçin)
+  sponge: `
+    <svg viewBox="0 0 110 100" class="svg-icon tool-svg" aria-hidden="true">
+      <g stroke="#ffffff" stroke-width="8" stroke-linejoin="round" stroke-linecap="round" fill="#ffffff">
+        <rect x="24" y="34" width="62" height="40" rx="12"/>
+        <circle cx="36" cy="30" r="14"/>
+        <circle cx="56" cy="24" r="16"/>
+        <circle cx="74" cy="32" r="13"/>
+      </g>
+      <rect x="24" y="34" width="62" height="40" rx="12" fill="#ffbe0b"/>
+      <rect x="24" y="34" width="62" height="12" rx="6" fill="#38b000"/>
+      <circle cx="38" cy="56" r="4" fill="#d97706"/>
+      <circle cx="56" cy="60" r="4.5" fill="#d97706"/>
+      <circle cx="72" cy="54" r="4" fill="#d97706"/>
+      <circle cx="36" cy="30" r="13" fill="#e0f2fe"/>
+      <circle cx="56" cy="24" r="15" fill="#ffffff"/>
+      <circle cx="74" cy="32" r="12" fill="#bae6fd"/>
+    </svg>
+  `,
+
   // Araç Sekme İkonları (Referans Görseldeki Kamyon/İş Makinesi Stilinde)
   tabDumpTruck: `
     <svg viewBox="0 0 72 50" class="svg-icon" aria-hidden="true">

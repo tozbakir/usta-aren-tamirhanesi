@@ -473,9 +473,54 @@ function renderStageCordlessDrillSVG(x, y) {
   `;
 }
 
+// Beyaz Eşya Su Tahliye Borusu İçin Usta Boru Anahtarı (Bisiklet Pompası Yerine!)
+function renderStagePipeWrenchSVG(x, y) {
+  return `
+    <g transform="translate(${x}, ${y})" class="scene-hero-tool interactive-part" data-part="wheel" data-scene-tool="wrench">
+      <g stroke="#ffffff" stroke-width="9" stroke-linejoin="round" stroke-linecap="round" fill="#ffffff">
+        <rect x="-78" y="-10" width="58" height="20" rx="8" transform="rotate(-14)"/>
+        <path d="M -24 -22 L 14 -22 L 14 -8 L -6 -8 L -6 8 L 14 8 L 14 22 L -24 22 Z"/>
+      </g>
+      <g transform="rotate(-14)">
+        <rect x="-78" y="-10" width="58" height="20" rx="8" fill="#e63946"/>
+        <rect x="-70" y="-5" width="38" height="6" rx="3" fill="#ff758f"/>
+      </g>
+      <path d="M -24 -22 L 14 -22 L 14 -8 L -6 -8 L -6 8 L 14 8 L 14 22 L -24 22 Z" fill="#94a3b8" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="-14" cy="0" r="4" fill="#334155"/>
+      <circle cx="16" cy="0" r="9" fill="#70e000" opacity="0.88" class="hint-pulse"/>
+    </g>
+  `;
+}
+
+// Beyaz Eşya Üzerindeki Leke İçin Köpüklü Sünger & Fıskiye
+function renderStageFoamSpongeSVG(x, y) {
+  return `
+    <g transform="translate(${x}, ${y})" class="scene-hero-tool interactive-part" data-part="mud" data-scene-tool="wash">
+      <g stroke="#ffffff" stroke-width="9" stroke-linejoin="round" fill="#ffffff">
+        <rect x="-32" y="-18" width="52" height="34" rx="10" transform="rotate(-12)"/>
+        <circle cx="-24" cy="-20" r="10"/>
+        <circle cx="-6" cy="-24" r="12"/>
+        <circle cx="14" cy="-18" r="9"/>
+      </g>
+      <g transform="rotate(-12)">
+        <rect x="-32" y="-18" width="52" height="34" rx="10" fill="#ffbe0b" stroke="#d97706" stroke-width="2.5"/>
+        <rect x="-32" y="-18" width="52" height="10" rx="5" fill="#38b000"/>
+        <circle cx="-16" cy="2" r="3" fill="#d97706"/>
+        <circle cx="0" cy="-2" r="3.5" fill="#d97706"/>
+        <circle cx="10" cy="6" r="3" fill="#d97706"/>
+      </g>
+      <circle cx="-24" cy="-20" r="9" fill="#caf0f8"/>
+      <circle cx="-6" cy="-24" r="11" fill="#ffffff"/>
+      <circle cx="14" cy="-18" r="8" fill="#38bdf8"/>
+    </g>
+  `;
+}
+
 // Referans Görseldeki Sahne Üstü Aktif Aletler (Saf Vektör Beyaz Sticker Konturlu - Filtresiz 60FPS)
 function renderSceneInteractiveToolsSVG(state, isDriving = false, vehicleId = 'tractor') {
   if (isDriving) return '';
+  const cfg = VEHICLE_CATALOG[vehicleId];
+  const isAppliance = Boolean(cfg && cfg.isAppliance);
   const hasMud = state.mudLevels.some((m) => m > 0.05);
   const hasLooseBolts = state.boltsLoose.some(Boolean);
   const hasFlatTire = state.wheelsBroken[0];
@@ -483,18 +528,25 @@ function renderSceneInteractiveToolsSVG(state, isDriving = false, vehicleId = 't
 
   let html = '';
 
-  // 1. Sol Üst: Çamaşır veya Bulaşık Makinesinde (veya Gevşek Vidalarda) Şarjlı Matkap + Kamyonda Taşlama/Matkap!
-  if (vehicleId === 'washer' || vehicleId === 'dishwasher') {
-    if (hasLooseBolts || hasMud) {
-      const cfg = VEHICLE_CATALOG[vehicleId];
+  if (isAppliance) {
+    // 1. Gevşek Vida Varsa Şarjlı Matkap (Sadece vidalar gevşekken görünür, sıkılınca kaybolur!)
+    if (hasLooseBolts) {
       const firstLooseIdx = state.boltsLoose.findIndex(Boolean);
       const boltPos = cfg.boltPositions[firstLooseIdx !== -1 ? firstLooseIdx : 0];
       html += renderStageCordlessDrillSVG(boltPos.x - 24, boltPos.y + 2);
     }
+    // 2. Kir / Leke Varsa Köpüklü Temizlik Süngeri
+    if (hasMud) {
+      html += renderStageFoamSpongeSVG(218, 178);
+    }
+    // 3. Su Tahliye Borusu Arızalıysa Boru Anahtarı (Bisiklet Pompası Değil!)
+    if (hasFlatTire) {
+      html += renderStagePipeWrenchSVG(212, 290);
+    }
   } else {
     if (hasMud) {
       html += `
-        <g transform="translate(86, 136)" class="scene-hero-tool interactive-part" data-part="mud" data-scene-tool="drill">
+        <g transform="translate(86, 136)" class="scene-hero-tool interactive-part" data-part="mud" data-scene-tool="wash">
           <!-- Saf Vektör Beyaz Sticker Kontur -->
           <g stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
             <rect x="-64" y="-13" width="66" height="26" rx="11" fill="#ffffff" transform="rotate(-18)"/>
@@ -529,50 +581,49 @@ function renderSceneInteractiveToolsSVG(state, isDriving = false, vehicleId = 't
       `;
     }
     if (hasLooseBolts) {
-      const cfg = VEHICLE_CATALOG[vehicleId];
       const firstLooseIdx = state.boltsLoose.findIndex(Boolean);
       const boltPos = cfg.boltPositions[firstLooseIdx !== -1 ? firstLooseIdx : 0];
       html += renderStageCordlessDrillSVG(boltPos.x - 24, boltPos.y + 2);
     }
-  }
 
-  // 2. Sol Alt: Patlak Tekerlek Varsa Yeşil Basınç Göstergeli Hava Pompası ve Hortumu
-  if (hasFlatTire) {
-    html += `
-      <g transform="translate(68, 242)" class="scene-hero-tool interactive-part" data-part="wheel" data-scene-tool="wrench">
-        <!-- Saf Vektör Beyaz Sticker Kontur -->
-        <g stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" fill="#ffffff">
-          <rect x="-26" y="-68" width="52" height="11" rx="5.5"/>
-          <rect x="-5" y="-55" width="10" height="26"/>
-          <path d="M -28 68 L -22 14 C -22 -6, 22 -6, 22 14 L 28 68 Z"/>
-          <rect x="-34" y="66" width="68" height="10" rx="5"/>
-          <path d="M 24 56 C 65 62, 92 84, 145 78 C 192 72, 232 94, 248 54 C 256 34, 242 18, 246 -4" fill="none" stroke-width="16"/>
-          <rect x="-9" y="-14" width="18" height="28" rx="4" transform="translate(248, -18) rotate(14)"/>
+    // 2. Sol Alt: Patlak Tekerlek Varsa Yeşil Basınç Göstergeli Hava Pompası ve Hortumu (Sadece Araçlarda!)
+    if (hasFlatTire) {
+      html += `
+        <g transform="translate(68, 242)" class="scene-hero-tool interactive-part" data-part="wheel" data-scene-tool="wrench">
+          <!-- Saf Vektör Beyaz Sticker Kontur -->
+          <g stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" fill="#ffffff">
+            <rect x="-26" y="-68" width="52" height="11" rx="5.5"/>
+            <rect x="-5" y="-55" width="10" height="26"/>
+            <path d="M -28 68 L -22 14 C -22 -6, 22 -6, 22 14 L 28 68 Z"/>
+            <rect x="-34" y="66" width="68" height="10" rx="5"/>
+            <path d="M 24 56 C 65 62, 92 84, 145 78 C 192 72, 232 94, 248 54 C 256 34, 242 18, 246 -4" fill="none" stroke-width="16"/>
+            <rect x="-9" y="-14" width="18" height="28" rx="4" transform="translate(248, -18) rotate(14)"/>
+          </g>
+          <!-- T-Kol Tutamaç -->
+          <rect x="-26" y="-68" width="52" height="11" rx="5.5" fill="#495057"/>
+          <rect x="-10" y="-70" width="20" height="15" rx="3.5" fill="#ff8800"/>
+          <rect x="-5" y="-55" width="10" height="26" fill="#adb5bd"/>
+          <!-- Yeşil Ana Gövde -->
+          <path d="M -28 68 L -22 14 C -22 -6, 22 -6, 22 14 L 28 68 Z" fill="#16db65"/>
+          <path d="M -22 68 L -18 16 C -18 2, 0 2, 0 16 L 0 68 Z" fill="#38b000" opacity="0.32"/>
+          <rect x="-14" y="-32" width="28" height="10" rx="4" fill="#058c42"/>
+          <rect x="-18" y="-22" width="36" height="12" rx="5" fill="#16db65"/>
+          <!-- Basınç Göstergesi (Manometre) -->
+          <path d="M -18 32 C -18 10, 18 10, 18 32 Z" fill="#fefae0" stroke="#ffbe0b" stroke-width="3.5"/>
+          <line x1="0" y1="30" x2="5" y2="16" stroke="#d90429" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="0" cy="30" r="3.5" fill="#2b2d42"/>
+          <!-- Taban -->
+          <rect x="-34" y="66" width="68" height="10" rx="5" fill="#343a40"/>
+          <!-- Patlak Tekerleğe Uzanan Siyah Hortum ve Yeşil Sibop Ucu -->
+          <path d="M 24 56 C 65 62, 92 84, 145 78 C 192 72, 232 94, 248 54 C 256 34, 242 18, 246 -4"
+            fill="none" stroke="#2b2d42" stroke-width="8" stroke-linecap="round"/>
+          <g transform="translate(248, -18) rotate(14)">
+            <rect x="-9" y="-14" width="18" height="28" rx="4" fill="#058c42"/>
+            <rect x="-6" y="-11" width="6" height="22" rx="2" fill="#16db65"/>
+          </g>
         </g>
-        <!-- T-Kol Tutamaç -->
-        <rect x="-26" y="-68" width="52" height="11" rx="5.5" fill="#495057"/>
-        <rect x="-10" y="-70" width="20" height="15" rx="3.5" fill="#ff8800"/>
-        <rect x="-5" y="-55" width="10" height="26" fill="#adb5bd"/>
-        <!-- Yeşil Ana Gövde -->
-        <path d="M -28 68 L -22 14 C -22 -6, 22 -6, 22 14 L 28 68 Z" fill="#16db65"/>
-        <path d="M -22 68 L -18 16 C -18 2, 0 2, 0 16 L 0 68 Z" fill="#38b000" opacity="0.32"/>
-        <rect x="-14" y="-32" width="28" height="10" rx="4" fill="#058c42"/>
-        <rect x="-18" y="-22" width="36" height="12" rx="5" fill="#16db65"/>
-        <!-- Basınç Göstergesi (Manometre) -->
-        <path d="M -18 32 C -18 10, 18 10, 18 32 Z" fill="#fefae0" stroke="#ffbe0b" stroke-width="3.5"/>
-        <line x1="0" y1="30" x2="5" y2="16" stroke="#d90429" stroke-width="3" stroke-linecap="round"/>
-        <circle cx="0" cy="30" r="3.5" fill="#2b2d42"/>
-        <!-- Taban -->
-        <rect x="-34" y="66" width="68" height="10" rx="5" fill="#343a40"/>
-        <!-- Patlak Tekerleğe Uzanan Siyah Hortum ve Yeşil Sibop Ucu -->
-        <path d="M 24 56 C 65 62, 92 84, 145 78 C 192 72, 232 94, 248 54 C 256 34, 242 18, 246 -4"
-          fill="none" stroke="#2b2d42" stroke-width="8" stroke-linecap="round"/>
-        <g transform="translate(248, -18) rotate(14)">
-          <rect x="-9" y="-14" width="18" height="28" rx="4" fill="#058c42"/>
-          <rect x="-6" y="-11" width="6" height="22" rx="2" fill="#16db65"/>
-        </g>
-      </g>
-    `;
+      `;
+    }
   }
 
   // 3. Üst Orta: Kasa Henüz Boyanmadıysa Boya Fırçası ve Turuncu Boya Dalgası
@@ -634,7 +685,8 @@ function renderBoltsLayerSVG(boltPositions, boltsLoose, isDriving = false) {
 }
 
 // Tavan Modifiyeleri (Saf Vektör Beyaz Sticker Konturlu)
-function renderRoofModSVG(x, y, roofType) {
+function renderRoofModSVG(x, y, roofType, isAppliance = false) {
+  if (isAppliance && roofType === 'normal') return '';
   if (roofType === 'rocket') {
     return `
       <g transform="translate(${x}, ${y})" class="interactive-part" data-part="roof">
@@ -1125,7 +1177,7 @@ function buildCompleteVehicleSVG(vehicleId, state, isDriving = false) {
             ${renderStudioBodySVG(vehicleId, state, u)}
           </g>
           <g id="roof-mod-layer" data-sig="${sigs.roofSig}">
-            ${renderRoofModSVG(cfg.roofAnchor.x, cfg.roofAnchor.y, state.roofType)}
+            ${renderRoofModSVG(cfg.roofAnchor.x, cfg.roofAnchor.y, state.roofType, Boolean(cfg.isAppliance))}
           </g>
           <g id="decals-layer" data-sig="${sigs.decalsSig}">
             ${renderDecalsLayerSVG(cfg, state.decals)}
@@ -1197,7 +1249,7 @@ function updateVehicleInPlace(containerEl, vehicleId, state, isDriving = false) 
   const roofLayer = existingSvg.querySelector('#roof-mod-layer');
   if (roofLayer && roofLayer.dataset.sig !== sigs.roofSig) {
     roofLayer.dataset.sig = sigs.roofSig;
-    roofLayer.innerHTML = renderRoofModSVG(cfg.roofAnchor.x, cfg.roofAnchor.y, state.roofType);
+    roofLayer.innerHTML = renderRoofModSVG(cfg.roofAnchor.x, cfg.roofAnchor.y, state.roofType, Boolean(cfg.isAppliance));
   }
 
   // 4. Çıkartmalar Katmanı

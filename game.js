@@ -357,10 +357,29 @@
     starCountEl.textContent = String(stars);
   }
 
+  const toolbeltDock = document.querySelector('.toolbelt-dock');
+  const wrenchToolNameEl = document.querySelector('[data-tool="wrench"] .tool-name');
+  const washToolNameEl = document.querySelector('[data-tool="wash"] .tool-name');
+  const wrenchToolSvgEl = document.querySelector('[data-tool="wrench"] .tool-svg-slot');
+  const washToolSvgEl = document.querySelector('[data-tool="wash"] .tool-svg-slot');
+
   function updateHeaderActionLabels() {
     const cfg = window.VEHICLE_CATALOG[currentVehicleId];
+    const isApp = Boolean(cfg && cfg.isAppliance);
     if (chipBoltsText) {
-      chipBoltsText.textContent = cfg && cfg.isAppliance ? 'Pompa & Vidalar' : 'Lastik & Vidalar';
+      chipBoltsText.textContent = isApp ? 'Boru & Vidalar' : 'Lastik & Vidalar';
+    }
+    if (wrenchToolNameEl) {
+      wrenchToolNameEl.textContent = isApp ? 'Boru Anahtarı' : 'Hava Pompası';
+    }
+    if (washToolNameEl) {
+      washToolNameEl.textContent = isApp ? 'Köpük & Sünger' : 'Köpük & Korna';
+    }
+    if (wrenchToolSvgEl) {
+      wrenchToolSvgEl.innerHTML = isApp ? window.SVG_ICONS.pipeWrench : window.SVG_ICONS.wrench;
+    }
+    if (washToolSvgEl) {
+      washToolSvgEl.innerHTML = isApp ? window.SVG_ICONS.sponge : window.SVG_ICONS.wash;
     }
     if (testDriveText) {
       if (currentVehicleId === 'washer') {
@@ -382,6 +401,9 @@
     chipBolts.classList.toggle('fixed', boltsAndTiresFixed);
     chipDents.classList.toggle('fixed', bodyAndPaintFixed);
     chipMud.classList.toggle('fixed', mudClean);
+    if (testDriveBtn) {
+      testDriveBtn.classList.toggle('ready-pulse', boltsAndTiresFixed && bodyAndPaintFixed && mudClean);
+    }
     updateHeaderActionLabels();
   }
 
@@ -432,9 +454,14 @@
   let lastToolY = 0;
 
   function showFloatingToolAt(clientX, clientY, strike = true) {
-    const iconMarkup = window.SVG_ICONS[currentTool] || window.SVG_ICONS.drill;
-    if (floatingTool.dataset.tool !== currentTool) {
-      floatingTool.dataset.tool = currentTool;
+    const cfg = window.VEHICLE_CATALOG[currentVehicleId];
+    const isApp = Boolean(cfg && cfg.isAppliance);
+    let iconKey = currentTool;
+    if (isApp && currentTool === 'wrench') iconKey = 'pipeWrench';
+    else if (isApp && currentTool === 'wash') iconKey = 'sponge';
+    const iconMarkup = window.SVG_ICONS[iconKey] || window.SVG_ICONS.drill;
+    if (floatingTool.dataset.tool !== iconKey) {
+      floatingTool.dataset.tool = iconKey;
       floatingTool.innerHTML = iconMarkup;
     }
     if (floatingTool.hidden) {
@@ -485,6 +512,8 @@
     }
 
     let paletteNeedsSync = false;
+    const cfg = window.VEHICLE_CATALOG[currentVehicleId];
+    const isApp = Boolean(cfg && cfg.isAppliance);
 
     if (toolId === 'drill') {
       window.arenAudio.playDrill();
@@ -492,15 +521,17 @@
 
       if (partType === 'bolt' && partEl && partEl.dataset.boltIndex !== undefined) {
         const bIdx = Number(partEl.dataset.boltIndex);
-        st.boltsLoose[bIdx] = false;
-        st.mudLevels = st.mudLevels.map((m) => Math.max(0, m - 0.5));
-      } else if (partType === 'mud') {
-        st.mudLevels = [0, 0, 0];
-        const looseIdx = st.boltsLoose.findIndex(Boolean);
-        if (looseIdx !== -1) st.boltsLoose[looseIdx] = false;
+        if (st.boltsLoose[bIdx]) {
+          st.boltsLoose[bIdx] = false;
+        } else {
+          const looseIdx = st.boltsLoose.findIndex(Boolean);
+          if (looseIdx !== -1) st.boltsLoose[looseIdx] = false;
+        }
       } else {
-        st.mudLevels = [0, 0, 0];
-        st.boltsLoose = st.boltsLoose.map(() => false);
+        const looseIdx = st.boltsLoose.findIndex(Boolean);
+        if (looseIdx !== -1) {
+          st.boltsLoose[looseIdx] = false;
+        }
       }
       spawnVectorParticles(clientX, clientY, 'drill', 20);
     } else if (toolId === 'wrench') {
@@ -508,7 +539,6 @@
       impulseVehicle(14, -4, 26);
 
       st.wheelsBroken = [false, false];
-      st.boltsLoose = st.boltsLoose.map(() => false);
       spawnVectorParticles(clientX, clientY, 'wrench', 18);
     } else if (toolId === 'paint') {
       window.arenAudio.playPaint();
@@ -519,7 +549,8 @@
       } else {
         st.colorIndex = (st.colorIndex + 1) % window.PAINT_PALETTE.length;
       }
-      st.mudLevels = st.mudLevels.map((m) => Math.max(0, m - 0.55));
+      st.roofDent = false;
+      st.engineDent = false;
       paletteNeedsSync = true;
       spawnVectorParticles(clientX, clientY, 'paint', 20);
     } else if (toolId === 'hammer') {
@@ -528,7 +559,6 @@
 
       st.roofDent = false;
       st.engineDent = false;
-      st.boltsLoose = st.boltsLoose.map(() => false);
       spawnVectorParticles(clientX, clientY, 'hammer', 18);
     } else if (toolId === 'wacky') {
       window.arenAudio.playWacky();
@@ -536,7 +566,7 @@
 
       st.wheelsBroken = [false, false];
       st.roofDent = false;
-      if (partType === 'roof') {
+      if (isApp || partType === 'roof') {
         const rIdx = (window.ROOF_TYPES.indexOf(st.roofType) + 1) % window.ROOF_TYPES.length;
         st.roofType = window.ROOF_TYPES[rIdx];
       } else if (partType === 'wheel') {
@@ -551,14 +581,14 @@
       paletteNeedsSync = true;
       spawnVectorParticles(clientX, clientY, 'wacky', 20);
     } else if (toolId === 'wash') {
-      window.arenAudio.playHorn();
+      if (isApp) {
+        window.arenAudio.playWaterSplash();
+      } else {
+        window.arenAudio.playHorn();
+      }
       impulseVehicle(6, 2, 28);
 
-      if (partType === 'mud') {
-        st.mudLevels = [0, 0, 0];
-      } else {
-        st.mudLevels = st.mudLevels.map((m) => Math.max(0, m - 0.6));
-      }
+      st.mudLevels = [0, 0, 0];
       spawnVectorParticles(clientX, clientY, 'wash', 20);
     }
 
@@ -645,11 +675,14 @@
 
     if (currentTool === 'wacky') {
       subPaletteBar.hidden = false;
-      if (subPaletteBar.dataset.mode === 'wacky') {
+      const cfg = window.VEHICLE_CATALOG[currentVehicleId];
+      const isApp = Boolean(cfg && cfg.isAppliance);
+      const modeKey = isApp ? 'wacky-appliance' : 'wacky-vehicle';
+      if (subPaletteBar.dataset.mode === modeKey) {
         syncSubPalettePressedState();
         return;
       }
-      subPaletteBar.dataset.mode = 'wacky';
+      subPaletteBar.dataset.mode = modeKey;
 
       const wheelNames = {
         normal: 'İş Lastiği',
@@ -659,18 +692,20 @@
         gear: 'Altın Dişli'
       };
       const roofNames = {
-        normal: 'Projektör',
+        normal: isApp ? 'Standart Üst' : 'Projektör',
         rocket: 'Süper Roket',
         dino: 'T-Rex Dino',
         rotor: 'Pervane',
         siren: 'Çakar Siren'
       };
 
-      const wBtns = window.WHEEL_TYPES.map((w) => `
-        <button type="button" class="mod-chip-btn" data-wheel-type="${w}" aria-pressed="${st.wheelType === w}">
-          ${wheelNames[w]}
-        </button>
-      `).join('');
+      const wBtns = isApp
+        ? ''
+        : window.WHEEL_TYPES.map((w) => `
+          <button type="button" class="mod-chip-btn" data-wheel-type="${w}" aria-pressed="${st.wheelType === w}">
+            ${wheelNames[w]}
+          </button>
+        `).join('');
 
       const rBtns = window.ROOF_TYPES.map((r) => `
         <button type="button" class="mod-chip-btn" data-roof-type="${r}" aria-pressed="${st.roofType === r}">
@@ -678,7 +713,20 @@
         </button>
       `).join('');
 
-      subPaletteBar.innerHTML = wBtns + rBtns;
+      const decalLabels = {
+        flame: 'Alev',
+        lightning: 'Şimşek',
+        starBadge: 'Yıldız',
+        numberThree: '3 Yaş',
+        dinoCrest: 'Dino'
+      };
+      const appDecalBtns = isApp
+        ? window.DECAL_KEYS.map((key) => `
+          <button type="button" class="mod-chip-btn" data-decal-key="${key}">+ ${decalLabels[key]}</button>
+        `).join('')
+        : '';
+
+      subPaletteBar.innerHTML = wBtns + rBtns + appDecalBtns;
 
       subPaletteBar.querySelectorAll('[data-wheel-type]').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -701,6 +749,18 @@
           impulseVehicle(12, 4, 10);
           mountOrUpdateVehicle(false);
           syncSubPalettePressedState();
+        });
+      });
+
+      subPaletteBar.querySelectorAll('[data-decal-key]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const curSt = vehicleStates[currentVehicleId];
+          const key = btn.dataset.decalKey;
+          if (curSt.decals.length >= 3) curSt.decals.shift();
+          curSt.decals.push(key);
+          window.arenAudio.playPaint();
+          impulseVehicle(9, -3, 0);
+          mountOrUpdateVehicle(false);
         });
       });
       return;
@@ -1088,6 +1148,14 @@
           <rect x="-126" y="-102" width="252" height="204" rx="16" fill="#0f172a" stroke="#cbd5e1" stroke-width="9"/>
           <rect x="-116" y="-92" width="232" height="184" rx="12" fill="#1e293b"/>
 
+          <!-- Yıkama Öncesinde Sepetlerin Arkasında Duran Alt Su Fıskiyesi (Tabakların Önünü Kapatmaz!) -->
+          ${!pState.isWashing ? `
+            <g transform="translate(0, 80)" opacity="0.78">
+              <rect x="-78" y="-5" width="156" height="10" rx="5" fill="#38bdf8" stroke="#ffffff" stroke-width="2"/>
+              <circle cx="0" cy="0" r="9" fill="#ffbe0b" stroke="#ffffff" stroke-width="2"/>
+            </g>
+          ` : ''}
+
           <!-- ÜST SEPET (Kase ve Bardak) -->
           <g transform="translate(0, -44)">
             ${pState.itemsLoaded[1] ? `
@@ -1129,20 +1197,20 @@
             <line x1="-106" y1="26" x2="106" y2="26" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
           </g>
 
-          <!-- 60FPS DÖNEN ÇİFT SU FISKİYESİ PERVANESİ -->
-          <g transform="translate(0, 4)">
-            <g class="app-spin-node">
-              <rect x="-86" y="-7" width="172" height="14" rx="7" fill="#38bdf8" stroke="#ffffff" stroke-width="3"/>
-              <rect x="-7" y="-58" width="14" height="116" rx="7" fill="#00b4d8" stroke="#ffffff" stroke-width="3"/>
-              <circle cx="0" cy="0" r="14" fill="#ffbe0b" stroke="#ffffff" stroke-width="3"/>
-              ${pState.isWashing ? `
+          <!-- SADECE YIKAMA SIRASINDA ÖNDE DÖNEN 60FPS ÇİFT SU FISKİYESİ VE KÖPÜKLÜ SU JETLERİ -->
+          ${pState.isWashing ? `
+            <g transform="translate(0, 4)">
+              <g class="app-spin-node">
+                <rect x="-86" y="-7" width="172" height="14" rx="7" fill="#38bdf8" stroke="#ffffff" stroke-width="3"/>
+                <rect x="-7" y="-58" width="14" height="116" rx="7" fill="#00b4d8" stroke="#ffffff" stroke-width="3"/>
+                <circle cx="0" cy="0" r="14" fill="#ffbe0b" stroke="#ffffff" stroke-width="3"/>
                 <circle cx="-64" cy="-24" r="9" fill="#caf0f8" opacity="0.92"/>
                 <circle cx="64" cy="24" r="9" fill="#ffffff" opacity="0.92"/>
                 <circle cx="28" cy="-44" r="8" fill="#38bdf8" opacity="0.9"/>
                 <circle cx="-32" cy="44" r="10" fill="#caf0f8" opacity="0.9"/>
-              ` : ''}
+              </g>
             </g>
-          </g>
+          ` : ''}
 
           ${pState.isClean ? `
             ${window.renderSparkleStar(-56, -48, 16, 0.1)}
@@ -1153,6 +1221,68 @@
         </g>
       </svg>
     `;
+  }
+
+  function renderDetergentCardSVG(appId) {
+    if (appId === 'washer') {
+      return `
+        <svg viewBox="0 0 64 56" class="item-card-svg">
+          <rect x="24" y="4" width="14" height="8" rx="3" fill="#ff4d8d" stroke="#ffffff" stroke-width="2.5"/>
+          <path d="M 16 14 C 16 10, 46 10, 46 14 L 50 48 C 50 51, 14 51, 14 48 Z" fill="#38bdf8" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M 42 20 C 52 20, 52 36, 42 36" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="31" cy="32" r="9" fill="#ffffff" opacity="0.9"/>
+          <circle cx="29" cy="30" r="4" fill="#ffbe0b"/>
+        </svg>
+      `;
+    }
+    return `
+      <svg viewBox="0 0 64 56" class="item-card-svg">
+        <rect x="10" y="12" width="44" height="32" rx="8" fill="#ffffff" stroke="#38bdf8" stroke-width="3.5"/>
+        <rect x="14" y="16" width="18" height="24" rx="4" fill="#38bdf8"/>
+        <rect x="32" y="16" width="18" height="24" rx="4" fill="#38b000"/>
+        <circle cx="32" cy="28" r="8" fill="#ff4d8d" stroke="#ffffff" stroke-width="2.5"/>
+      </svg>
+    `;
+  }
+
+  function bindApplianceCardInteraction(btn, onActivate) {
+    let startX = 0;
+    let startY = 0;
+    let dragged = false;
+
+    btn.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      startX = e.clientX;
+      startY = e.clientY;
+      dragged = false;
+      btn.setPointerCapture(e.pointerId);
+    });
+
+    btn.addEventListener('pointermove', (e) => {
+      if (!btn.hasPointerCapture(e.pointerId)) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!dragged && Math.hypot(dx, dy) > 8) {
+        dragged = true;
+        btn.style.zIndex = '60';
+      }
+      if (dragged) {
+        btn.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale(1.08)`;
+      }
+    });
+
+    btn.addEventListener('pointerup', (e) => {
+      btn.style.transform = '';
+      btn.style.zIndex = '';
+      onActivate(e.clientX || layoutMetrics.stageCenterX, e.clientY || layoutMetrics.stageCenterY);
+      dragged = false;
+    });
+
+    btn.addEventListener('lostpointercapture', () => {
+      btn.style.transform = '';
+      btn.style.zIndex = '';
+      dragged = false;
+    });
   }
 
   function syncAppliancePlayDOM() {
@@ -1177,6 +1307,7 @@
 
     const detCardHtml = `
       <button type="button" class="appliance-item-card detergent-card ${pState.detergentAdded ? 'loaded' : ''}" data-app-detergent="true">
+        ${renderDetergentCardSVG(appId)}
         <span>${detLabel}</span>
       </button>
     `;
@@ -1194,16 +1325,16 @@
     }
 
     applianceItemsTray.querySelectorAll('[data-app-item]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const idx = Number(btn.dataset.appItem);
-        loadApplianceItem(idx, e.clientX || layoutMetrics.stageCenterX, e.clientY || layoutMetrics.stageCenterY);
+      const idx = Number(btn.dataset.appItem);
+      bindApplianceCardInteraction(btn, (cx, cy) => {
+        loadApplianceItem(idx, cx, cy);
       });
     });
 
     const detBtn = applianceItemsTray.querySelector('[data-app-detergent]');
     if (detBtn) {
-      detBtn.addEventListener('click', (e) => {
-        addApplianceDetergent(e.clientX || layoutMetrics.stageCenterX, e.clientY || layoutMetrics.stageCenterY);
+      bindApplianceCardInteraction(detBtn, (cx, cy) => {
+        addApplianceDetergent(cx, cy);
       });
     }
 
@@ -1273,14 +1404,28 @@
       return;
     }
 
-    // Eğer hiç eşya konmadıysa ilk tıklamada uyar, ama 3 yaş çocuğunun takılmaması için otomatik 2 eşya da ekle!
+    // Adım adım oyun mekaniği: Önce kirli çamaşır/bulaşık eklenmeli, sonra deterjan konmalı!
     if (!pState.itemsLoaded.some(Boolean)) {
-      pState.itemsLoaded = [true, true, true, true];
-      window.arenAudio.playWacky();
-      syncAppliancePlayDOM();
+      window.arenAudio.playWrench();
+      applianceItemsTray.querySelectorAll('[data-app-item]').forEach((el) => {
+        el.classList.add('needs-attention');
+      });
+      const needItemsMsg = appId === 'washer'
+        ? 'Önce kirli çamaşırları makinenin içine atalım Usta Aren!'
+        : 'Önce kirli tabak ve bardakları sepete dizelim Usta Aren!';
+      setSpeech(needItemsMsg, true, true);
+      return;
     }
+
     if (!pState.detergentAdded) {
-      pState.detergentAdded = true;
+      window.arenAudio.playWrench();
+      const detEl = applianceItemsTray.querySelector('[data-app-detergent]');
+      if (detEl) detEl.classList.add('needs-attention');
+      const needDetMsg = appId === 'washer'
+        ? 'Deterjan koymayı unutmayalım Usta Aren! Deterjan şişesine dokun!'
+        : 'Bulaşık tabletini koymayı unutmayalım Usta Aren! Deterjan kutusuna dokun!';
+      setSpeech(needDetMsg, true, true);
+      return;
     }
 
     pState.isClean = false;
@@ -1317,6 +1462,7 @@
     isAppliancePlay = true;
     appliancePlayStage.hidden = false;
     subPaletteBar.hidden = true;
+    if (toolbeltDock) toolbeltDock.hidden = true;
     syncAppliancePlayDOM();
     refreshLayoutMetrics();
     window.arenAudio.playVictory();
@@ -1330,6 +1476,7 @@
   function stopAppliancePlay(announce = true) {
     isAppliancePlay = false;
     appliancePlayStage.hidden = true;
+    if (toolbeltDock) toolbeltDock.hidden = false;
     const appId = currentVehicleId === 'dishwasher' ? 'dishwasher' : 'washer';
     appliancePlayState[appId].isWashing = false;
     mountOrUpdateVehicle(true);
@@ -1376,6 +1523,7 @@
     isTestDrive = true;
     testDriveStage.hidden = false;
     subPaletteBar.hidden = true;
+    if (toolbeltDock) toolbeltDock.hidden = true;
 
     const st = vehicleStates[currentVehicleId];
     window.updateVehicleInPlace(drivingVehicle, currentVehicleId, st, true);
@@ -1396,6 +1544,7 @@
   function stopTestDrive(announce = true) {
     isTestDrive = false;
     testDriveStage.hidden = true;
+    if (toolbeltDock) toolbeltDock.hidden = false;
     obstaclesContainer.innerHTML = '';
     obstacles = [];
     mountOrUpdateVehicle(true);
