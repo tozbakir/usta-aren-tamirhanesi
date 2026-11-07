@@ -74,12 +74,12 @@
     block-size: 100dvh;
     max-inline-size: 100dvw;
     max-block-size: 100dvh;
-    background: rgba(15, 38, 68, 0.78);
-    backdrop-filter: blur(8px);
+    background: rgba(15, 38, 68, 0.88);
     display: grid;
     place-items: center;
     z-index: 200;
     border: none;
+    contain: layout style paint;
   }
 
   .welcome-modal:not([open]) {
@@ -103,7 +103,6 @@
     block-size: 116px;
     margin-inline: auto;
     margin-block-end: 0.6rem;
-    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.2));
   }
 
   .welcome-card h1 {
@@ -168,6 +167,7 @@
     border-block-end: 4px solid var(--color-white);
     box-shadow: 0 4px 14px rgba(10, 37, 64, 0.25);
     z-index: 30;
+    contain: layout style paint;
   }
 
   .brand-badge {
@@ -322,6 +322,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
+    contain: layout style paint;
   }
 
   .garage-bg-svg {
@@ -372,6 +373,7 @@
     pointer-events: none;
     max-inline-size: 90dvw;
     text-align: center;
+    contain: layout style paint;
     transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 
     &.pop {
@@ -387,6 +389,7 @@
     gap: 0.5rem;
     z-index: 18;
     pointer-events: none;
+    contain: layout style paint;
   }
 
   .status-chip {
@@ -445,11 +448,6 @@
     cursor: pointer;
     transform-box: fill-box;
     transform-origin: center;
-    transition: filter 0.14s ease;
-
-    &:hover {
-      filter: brightness(1.06);
-    }
   }
 
   .hint-pulse {
@@ -542,22 +540,24 @@
     }
   }
 
-  /* İmleci Takip Eden Canlı SVG Alet */
+  /* İmleci Takip Eden Canlı SVG Alet (GPU translate3d ile 0ms Layout/Paint) */
   .floating-tool {
     position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
     inline-size: 108px;
     block-size: 108px;
     margin: 0;
     pointer-events: none;
     z-index: 120;
-    filter: drop-shadow(0 10px 14px rgba(10, 37, 64, 0.38));
+    will-change: transform;
 
     &[hidden] {
       display: none;
     }
 
-    &.tool-active-swing {
-      animation: tool-strike 0.24s ease-in-out;
+    &.tool-active-swing > svg {
+      animation: tool-strike 0.22s ease-in-out;
     }
   }
 
@@ -702,6 +702,7 @@
     padding-block: clamp(0.4rem, 1dvh, 0.68rem);
     padding-inline: clamp(0.4rem, 1.5vw, 1.2rem);
     z-index: 30;
+    contain: layout style paint;
   }
 
   .toolbelt-tray {

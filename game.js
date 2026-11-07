@@ -1,10 +1,11 @@
-// Usta Aren'in Çılgın Tamirhanesi - 60FPS Stüdyo Fizik ve Etkileşim Motoru
+// Usta Aren'in Çılgın Tamirhanesi - 60FPS Tablet Optimize Fizik ve Etkileşim Motoru
 
 (() => {
   let currentVehicleId = 'tractor';
   let currentTool = 'drill';
   let stars = 0;
   let isTestDrive = false;
+  const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
 
   const vehicleStates = {
     tractor: window.createInitialVehicleState('tractor'),
@@ -13,14 +14,15 @@
     monster: window.createInitialVehicleState('monster')
   };
 
-  // Atölye Süspansiyon Yay Fiziği (60FPS)
+  // Atölye Süspansiyon Yay Fiziği (Hareketsizken Uyku Moduna Geçer -> 0 CPU/GPU Yükü)
   const rigPhysics = {
     y: 0,
     vy: 0,
     rot: 0,
     vrot: 0,
     wheelAngle: 0,
-    wheelVel: 0
+    wheelVel: 0,
+    awake: false
   };
 
   // Test Sürüşü Araç Fiziği (Gölge Sabit, Gövde Havalanır!)
@@ -94,6 +96,47 @@
   const driveJumpBtn = document.getElementById('drive-jump-btn');
   const backGarageBtn = document.getElementById('back-garage-btn');
 
+  // Önbelleğe Alınmış SVG Alt Düğüm Referansları (Her Karede querySelector Çağrısını Önler)
+  const workshopRefs = {
+    chassis: null,
+    shadow: null,
+    wheels: []
+  };
+
+  const driveRefs = {
+    airborneGroup: null,
+    groundShadow: null,
+    wheels: []
+  };
+
+  // Önbelleğe Alınmış Ekran ve Araç Koordinatları (mainLoop İçinde getBoundingClientRect / Reflow Yok!)
+  const layoutMetrics = {
+    vw: window.innerWidth,
+    vh: window.innerHeight,
+    stageCenterX: window.innerWidth * 0.5,
+    stageCenterY: window.innerHeight * 0.5,
+    stageLeft: 0,
+    stageTop: 0,
+    stageWidth: 680,
+    stageHeight: 360,
+    carLeft: 80,
+    carRight: 380,
+    carTop: 320,
+    carBottom: 520
+  };
+
+  function cacheWorkshopRefs() {
+    workshopRefs.chassis = vehicleStage.querySelector('#chassis-rig');
+    workshopRefs.shadow = vehicleStage.querySelector('#vehicle-ground-shadow');
+    workshopRefs.wheels = Array.from(vehicleStage.querySelectorAll('.wheel-spin-node'));
+  }
+
+  function cacheDriveRefs() {
+    driveRefs.airborneGroup = drivingVehicle.querySelector('#vehicle-airborne-group');
+    driveRefs.groundShadow = drivingVehicle.querySelector('#vehicle-ground-shadow');
+    driveRefs.wheels = Array.from(drivingVehicle.querySelectorAll('.wheel-spin-node'));
+  }
+
   function mountStaticSVGIcons() {
     document.getElementById('welcome-avatar').innerHTML = window.SVG_ICONS.ustaArenAvatar;
     document.getElementById('header-avatar').innerHTML = window.SVG_ICONS.ustaArenAvatar;
@@ -109,18 +152,45 @@
     });
   }
 
-  // 60FPS Vektör Parçacık Motoru
+  // 60FPS Vektör Parçacık Motoru (Boştayken clearRect Çağrılmaz)
   const canvas = document.getElementById('fx-canvas');
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { alpha: true });
   const particles = [];
   const shockwaves = [];
+  let canvasDirty = false;
 
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+  function refreshLayoutMetrics() {
+    layoutMetrics.vw = window.innerWidth;
+    layoutMetrics.vh = window.innerHeight;
+    canvas.width = layoutMetrics.vw;
+    canvas.height = layoutMetrics.vh;
+
+    if (!isTestDrive) {
+      const sRect = vehicleStage.getBoundingClientRect();
+      if (sRect.width > 0) {
+        layoutMetrics.stageLeft = sRect.left;
+        layoutMetrics.stageTop = sRect.top;
+        layoutMetrics.stageWidth = sRect.width;
+        layoutMetrics.stageHeight = sRect.height;
+        layoutMetrics.stageCenterX = sRect.left + sRect.width * 0.5;
+        layoutMetrics.stageCenterY = sRect.top + sRect.height * 0.5;
+      }
+    } else {
+      const cRect = drivingVehicle.getBoundingClientRect();
+      if (cRect.width > 0) {
+        layoutMetrics.carLeft = cRect.left;
+        layoutMetrics.carRight = cRect.right;
+        layoutMetrics.carTop = cRect.top;
+        layoutMetrics.carBottom = cRect.bottom;
+      }
+    }
   }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(refreshLayoutMetrics, 80);
+  }, { passive: true });
 
   function drawFourPointSparkle(c, r) {
     c.beginPath();
@@ -143,13 +213,13 @@
     }
     c.closePath();
     c.fill();
-    c.lineWidth = 2;
-    c.strokeStyle = '#ffffff';
-    c.stroke();
   }
 
-  function spawnVectorParticles(x, y, toolId, count = 22) {
-    shockwaves.push({ x, y, r: 8, alpha: 0.85, color: '#ffffff' });
+  function spawnVectorParticles(x, y, toolId, requestedCount = 18) {
+    const count = isCoarsePointer ? Math.min(12, Math.ceil(requestedCount * 0.6)) : requestedCount;
+    if (shockwaves.length < 4) {
+      shockwaves.push({ x, y, r: 8, alpha: 0.85, color: '#ffffff' });
+    }
 
     const colorSets = {
       drill: ['#fff3b0', '#ffbe0b', '#ff9f1c', '#9c6644'],
@@ -162,9 +232,14 @@
     };
     const palette = colorSets[toolId] || colorSets.drill;
 
+    // Tablet GPU fill-rate koruması: aynı anda en fazla 48 aktif parçacık
+    if (particles.length > 48) {
+      particles.splice(0, particles.length - 36);
+    }
+
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 2.5 + Math.random() * 9.5;
+      const speed = 2.5 + Math.random() * 9.0;
       let shape = 'spark';
       if (toolId === 'wash') shape = 'bubble';
       else if (toolId === 'paint') shape = i % 2 === 0 ? 'twinkle' : 'spark';
@@ -175,25 +250,30 @@
         x,
         y,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - (toolId === 'wash' ? 2.5 : 3.2),
-        gravity: toolId === 'wash' ? -0.05 : 0.26,
+        vy: Math.sin(angle) * speed - (toolId === 'wash' ? 2.4 : 3.0),
+        gravity: toolId === 'wash' ? -0.05 : 0.28,
         life: 1,
-        decay: 0.018 + Math.random() * 0.014,
-        size: 7 + Math.random() * 9,
+        decay: 0.024 + Math.random() * 0.016,
+        size: 6.5 + Math.random() * 8,
         rot: Math.random() * Math.PI * 2,
-        vrot: (Math.random() - 0.5) * 0.22,
+        vrot: (Math.random() - 0.5) * 0.2,
         shape,
         color: palette[i % palette.length]
       });
     }
+    canvasDirty = true;
   }
 
+  let speechPopTimer = null;
   function setSpeech(message, speakAloud = true, forceVoice = false) {
     speechText.textContent = message;
     srAnnouncer.textContent = message;
-    speechBubble.classList.remove('pop');
-    void speechBubble.offsetWidth;
     speechBubble.classList.add('pop');
+    if (speechPopTimer) clearTimeout(speechPopTimer);
+    speechPopTimer = setTimeout(() => {
+      speechBubble.classList.remove('pop');
+    }, 190);
+
     if (speakAloud) {
       window.arenAudio.speak(message, forceVoice);
     }
@@ -215,60 +295,76 @@
     chipMud.classList.toggle('fixed', mudClean);
   }
 
-  function mountOrUpdateVehicle() {
+  function mountOrUpdateVehicle(forceSubPalette = false) {
     const st = vehicleStates[currentVehicleId];
-    vehicleStage.innerHTML = window.buildCompleteVehicleSVG(currentVehicleId, st, false);
+    const refsChanged = window.updateVehicleInPlace(vehicleStage, currentVehicleId, st, false);
+    if (refsChanged || !workshopRefs.chassis) {
+      cacheWorkshopRefs();
+    }
     applyWorkshopRigTransforms();
     updateRepairStatusChips();
-    if (!subPaletteBar.hidden) {
+    if (forceSubPalette && !subPaletteBar.hidden) {
       renderSubPalette();
     }
   }
 
   function applyWorkshopRigTransforms() {
-    const chassis = vehicleStage.querySelector('#chassis-rig');
-    if (chassis) {
-      chassis.setAttribute(
+    if (workshopRefs.chassis) {
+      workshopRefs.chassis.setAttribute(
         'transform',
         `translate(0, ${rigPhysics.y.toFixed(2)}) rotate(${rigPhysics.rot.toFixed(2)} 345 210)`
       );
     }
-    // Gölge yerde sabit kalır, şasi yaylandıkça gölge genişliği hafifçe tepki verir
-    const shadow = vehicleStage.querySelector('#vehicle-ground-shadow');
-    if (shadow) {
+    if (workshopRefs.shadow) {
       const scale = Math.max(0.75, Math.min(1.12, 1 + rigPhysics.y * 0.004));
-      shadow.setAttribute('rx', (235 * scale).toFixed(1));
+      workshopRefs.shadow.setAttribute('rx', (225 * scale).toFixed(1));
     }
 
-    const wheelNodes = vehicleStage.querySelectorAll('.wheel-spin-node');
     const st = vehicleStates[currentVehicleId];
-    wheelNodes.forEach((node, idx) => {
-      if (!st.wheelsBroken[idx]) {
-        node.setAttribute('transform', `rotate(${rigPhysics.wheelAngle.toFixed(1)})`);
+    const angleStr = `rotate(${rigPhysics.wheelAngle.toFixed(1)})`;
+    for (let idx = 0; idx < workshopRefs.wheels.length; idx++) {
+      if (!st.wheelsBroken[idx] && workshopRefs.wheels[idx]) {
+        workshopRefs.wheels[idx].setAttribute('transform', angleStr);
       }
-    });
+    }
   }
 
   function impulseVehicle(vy = 12, vrot = 4, wheelSpin = 0) {
     rigPhysics.vy += vy;
     rigPhysics.vrot += vrot;
     rigPhysics.wheelVel += wheelSpin;
+    rigPhysics.awake = true;
   }
 
+  // İmleci Takip Eden Canlı SVG Alet (Sıfır Layout/Reflow: Sadece translate3d ve Tek Seferlik innerHTML)
   let hideToolTimeout = null;
+  let strikeAnimTimeout = null;
+  let lastToolX = 0;
+  let lastToolY = 0;
+
   function showFloatingToolAt(clientX, clientY, strike = true) {
-    floatingTool.innerHTML = window.SVG_ICONS[currentTool] || window.SVG_ICONS.drill;
-    floatingTool.hidden = false;
+    const iconMarkup = window.SVG_ICONS[currentTool] || window.SVG_ICONS.drill;
+    if (floatingTool.dataset.tool !== currentTool) {
+      floatingTool.dataset.tool = currentTool;
+      floatingTool.innerHTML = iconMarkup;
+    }
+    if (floatingTool.hidden) {
+      floatingTool.hidden = false;
+    }
+
     const size = 108;
-    const left = Math.max(0, Math.min(clientX - size * 0.42, window.innerWidth - size));
-    const top = Math.max(0, Math.min(clientY - size * 0.52, window.innerHeight - size));
-    floatingTool.style.left = `${left}px`;
-    floatingTool.style.top = `${top}px`;
+    const left = Math.max(0, Math.min(clientX - size * 0.42, layoutMetrics.vw - size));
+    const top = Math.max(0, Math.min(clientY - size * 0.52, layoutMetrics.vh - size));
+    lastToolX = left;
+    lastToolY = top;
+    floatingTool.style.transform = `translate3d(${left.toFixed(1)}px, ${top.toFixed(1)}px, 0)`;
 
     if (strike) {
-      floatingTool.classList.remove('tool-active-swing');
-      void floatingTool.offsetWidth;
       floatingTool.classList.add('tool-active-swing');
+      if (strikeAnimTimeout) clearTimeout(strikeAnimTimeout);
+      strikeAnimTimeout = setTimeout(() => {
+        floatingTool.classList.remove('tool-active-swing');
+      }, 220);
     }
 
     if (hideToolTimeout) clearTimeout(hideToolTimeout);
@@ -276,7 +372,7 @@
       if (!isDraggingTool) {
         floatingTool.hidden = true;
       }
-    }, 680);
+    }, 640);
   }
 
   let actionCounter = 0;
@@ -288,7 +384,7 @@
 
     const partEl = targetEl && targetEl.closest ? targetEl.closest('.interactive-part') : null;
     const partType = partEl ? partEl.dataset.part : 'body';
-    if (partEl && partEl.dataset.sceneTool) {
+    if (partEl && partEl.dataset.sceneTool && partEl.dataset.sceneTool !== toolId) {
       toolId = partEl.dataset.sceneTool;
       selectTool(toolId);
     }
@@ -299,39 +395,33 @@
       st.bucketAngle = st.bucketAngle === 0 ? -18 : st.bucketAngle === -18 ? 12 : 0;
     }
 
+    let paletteNeedsSync = false;
+
     if (toolId === 'drill') {
-      // Taşlama & Matkap: Referans görseldeki gibi pas/çamuru kazır VE gevşek vidaları sıkar!
       window.arenAudio.playDrill();
       impulseVehicle(5, (Math.random() - 0.5) * 3, 24);
 
       if (partType === 'mud') {
-        const mIdx = Number(partEl.dataset.mudIndex);
-        st.mudLevels[mIdx] = 0;
+        st.mudLevels = [0, 0, 0];
       } else if (partType === 'bolt') {
         const bIdx = Number(partEl.dataset.boltIndex);
         st.boltsLoose[bIdx] = false;
       } else {
-        const dirtyIdx = st.mudLevels.findIndex((m) => m > 0.05);
-        if (dirtyIdx !== -1) {
-          st.mudLevels[dirtyIdx] = Math.max(0, st.mudLevels[dirtyIdx] - 0.6);
-        }
+        st.mudLevels = st.mudLevels.map((m) => Math.max(0, m - 0.55));
         const looseIdx = st.boltsLoose.findIndex(Boolean);
         if (looseIdx !== -1) {
           st.boltsLoose[looseIdx] = false;
         }
       }
-      spawnVectorParticles(clientX, clientY, 'drill', 26);
+      spawnVectorParticles(clientX, clientY, 'drill', 20);
     } else if (toolId === 'wrench') {
-      // Yeşil Hava Pompası: Referans görseldeki patlak lastiği şişirir, dalı çıkarır!
       window.arenAudio.playWrench();
       impulseVehicle(14, -4, 22);
 
       st.wheelsBroken = [false, false];
-      const looseIdx = st.boltsLoose.findIndex(Boolean);
-      if (looseIdx !== -1) st.boltsLoose[looseIdx] = false;
-      spawnVectorParticles(clientX, clientY, 'wrench', 24);
+      st.boltsLoose = [false, false, false];
+      spawnVectorParticles(clientX, clientY, 'wrench', 18);
     } else if (toolId === 'paint') {
-      // Boya Fırçası: Referans görseldeki gibi gri astarlı damper kasasını boyar ve renk/çıkartma ekler!
       window.arenAudio.playPaint();
       impulseVehicle(7, -2, 8);
 
@@ -341,15 +431,16 @@
         st.colorIndex = (st.colorIndex + 1) % window.PAINT_PALETTE.length;
       }
       st.mudLevels = st.mudLevels.map((m) => Math.max(0, m - 0.55));
-      spawnVectorParticles(clientX, clientY, 'paint', 26);
+      paletteNeedsSync = true;
+      spawnVectorParticles(clientX, clientY, 'paint', 20);
     } else if (toolId === 'hammer') {
       window.arenAudio.playHammer();
       impulseVehicle(18, (Math.random() - 0.5) * 8, 10);
 
       st.roofDent = false;
       st.engineDent = false;
-      st.boltsLoose = [false, false, false, false];
-      spawnVectorParticles(clientX, clientY, 'hammer', 24);
+      st.boltsLoose = [false, false, false];
+      spawnVectorParticles(clientX, clientY, 'hammer', 18);
     } else if (toolId === 'wacky') {
       window.arenAudio.playWacky();
       impulseVehicle(15, -5, 26);
@@ -368,24 +459,39 @@
         const rIdx = (window.ROOF_TYPES.indexOf(st.roofType) + 1) % window.ROOF_TYPES.length;
         st.roofType = window.ROOF_TYPES[rIdx === 0 ? 1 : rIdx];
       }
-      spawnVectorParticles(clientX, clientY, 'wacky', 28);
+      paletteNeedsSync = true;
+      spawnVectorParticles(clientX, clientY, 'wacky', 20);
     } else if (toolId === 'wash') {
       window.arenAudio.playHorn();
       impulseVehicle(6, 2, 12);
 
       if (partType === 'mud') {
-        const mIdx = Number(partEl.dataset.mudIndex);
-        st.mudLevels[mIdx] = 0;
+        st.mudLevels = [0, 0, 0];
       } else {
         st.mudLevels = st.mudLevels.map((m) => Math.max(0, m - 0.6));
       }
-      spawnVectorParticles(clientX, clientY, 'wash', 26);
+      spawnVectorParticles(clientX, clientY, 'wash', 20);
     }
 
-    mountOrUpdateVehicle();
+    mountOrUpdateVehicle(paletteNeedsSync);
 
     const phrases = TOOL_PHRASES[toolId] || TOOL_PHRASES.drill;
     setSpeech(phrases[actionCounter % phrases.length], true, false);
+  }
+
+  function syncSubPalettePressedState() {
+    if (subPaletteBar.hidden) return;
+    const st = vehicleStates[currentVehicleId];
+    subPaletteBar.querySelectorAll('[data-paint-idx]').forEach((btn) => {
+      const idx = Number(btn.dataset.paintIdx);
+      btn.setAttribute('aria-pressed', String(st.colorIndex === idx && !st.primerUnpainted));
+    });
+    subPaletteBar.querySelectorAll('[data-wheel-type]').forEach((btn) => {
+      btn.setAttribute('aria-pressed', String(st.wheelType === btn.dataset.wheelType));
+    });
+    subPaletteBar.querySelectorAll('[data-roof-type]').forEach((btn) => {
+      btn.setAttribute('aria-pressed', String(st.roofType === btn.dataset.roofType));
+    });
   }
 
   function renderSubPalette() {
@@ -393,6 +499,12 @@
 
     if (currentTool === 'paint') {
       subPaletteBar.hidden = false;
+      if (subPaletteBar.dataset.mode === 'paint') {
+        syncSubPalettePressedState();
+        return;
+      }
+      subPaletteBar.dataset.mode = 'paint';
+
       const colorBtns = window.PAINT_PALETTE.map((p, idx) => `
         <button type="button" class="swatch-btn" data-paint-idx="${idx}"
           aria-pressed="${st.colorIndex === idx && !st.primerUnpainted}"
@@ -415,22 +527,25 @@
 
       subPaletteBar.querySelectorAll('[data-paint-idx]').forEach((btn) => {
         btn.addEventListener('click', () => {
-          st.colorIndex = Number(btn.dataset.paintIdx);
-          st.primerUnpainted = false;
+          const curSt = vehicleStates[currentVehicleId];
+          curSt.colorIndex = Number(btn.dataset.paintIdx);
+          curSt.primerUnpainted = false;
           window.arenAudio.playPaint();
           impulseVehicle(8, 0, 10);
-          mountOrUpdateVehicle();
+          mountOrUpdateVehicle(false);
+          syncSubPalettePressedState();
         });
       });
 
       subPaletteBar.querySelectorAll('[data-decal-key]').forEach((btn) => {
         btn.addEventListener('click', () => {
+          const curSt = vehicleStates[currentVehicleId];
           const key = btn.dataset.decalKey;
-          if (st.decals.length >= 3) st.decals.shift();
-          st.decals.push(key);
+          if (curSt.decals.length >= 3) curSt.decals.shift();
+          curSt.decals.push(key);
           window.arenAudio.playPaint();
           impulseVehicle(9, -3, 0);
-          mountOrUpdateVehicle();
+          mountOrUpdateVehicle(false);
         });
       });
       return;
@@ -438,6 +553,12 @@
 
     if (currentTool === 'wacky') {
       subPaletteBar.hidden = false;
+      if (subPaletteBar.dataset.mode === 'wacky') {
+        syncSubPalettePressedState();
+        return;
+      }
+      subPaletteBar.dataset.mode = 'wacky';
+
       const wheelNames = {
         normal: 'İş Lastiği',
         donut: 'Çörek Teker',
@@ -469,30 +590,35 @@
 
       subPaletteBar.querySelectorAll('[data-wheel-type]').forEach((btn) => {
         btn.addEventListener('click', () => {
-          st.wheelType = btn.dataset.wheelType;
-          st.wheelsBroken = [false, false];
+          const curSt = vehicleStates[currentVehicleId];
+          curSt.wheelType = btn.dataset.wheelType;
+          curSt.wheelsBroken = [false, false];
           window.arenAudio.playWacky();
           impulseVehicle(14, -4, 25);
-          mountOrUpdateVehicle();
+          mountOrUpdateVehicle(false);
+          syncSubPalettePressedState();
         });
       });
 
       subPaletteBar.querySelectorAll('[data-roof-type]').forEach((btn) => {
         btn.addEventListener('click', () => {
-          st.roofType = btn.dataset.roofType;
-          st.roofDent = false;
+          const curSt = vehicleStates[currentVehicleId];
+          curSt.roofType = btn.dataset.roofType;
+          curSt.roofDent = false;
           window.arenAudio.playWacky();
           impulseVehicle(12, 4, 10);
-          mountOrUpdateVehicle();
+          mountOrUpdateVehicle(false);
+          syncSubPalettePressedState();
         });
       });
       return;
     }
 
     subPaletteBar.hidden = true;
+    subPaletteBar.dataset.mode = '';
   }
 
-  // Alet Seçimi ve Pointer Capture ile Sürükleme
+  // Alet Seçimi ve Pointer Capture ile Sürükleme (Sürükleme Boyunca Sadece GPU translate3d)
   const toolButtons = document.querySelectorAll('.tool-btn');
   let dragStartX = 0;
   let dragStartY = 0;
@@ -534,10 +660,10 @@
       if (isDraggingTool) {
         showFloatingToolAt(event.clientX, event.clientY, false);
         const now = performance.now();
-        if (now - lastDragApplyTime > 290) {
+        if (now - lastDragApplyTime > 310) {
+          lastDragApplyTime = now;
           const hitEl = document.elementFromPoint(event.clientX, event.clientY);
           if (hitEl && vehicleStage.contains(hitEl)) {
-            lastDragApplyTime = now;
             applyToolAtPoint(draggedToolId, hitEl, event.clientX, event.clientY);
           }
         }
@@ -578,7 +704,7 @@
     if (!stagePointerActive || isTestDrive) return;
     showFloatingToolAt(event.clientX, event.clientY, false);
     const now = performance.now();
-    if (now - lastStageTick > 260) {
+    if (now - lastStageTick > 290) {
       lastStageTick = now;
       applyToolAtPoint(currentTool, event.target, event.clientX, event.clientY);
     }
@@ -586,7 +712,7 @@
 
   window.addEventListener('pointerup', () => {
     stagePointerActive = false;
-  });
+  }, { passive: true });
 
   // Araç Sekmesi Değiştirme
   const vehicleTabs = document.querySelectorAll('.vehicle-tab');
@@ -606,7 +732,7 @@
 
       setTimeout(() => {
         currentVehicleId = targetId;
-        mountOrUpdateVehicle();
+        mountOrUpdateVehicle(true);
         impulseVehicle(14, -3, 18);
         garageDoor.classList.remove('closed');
         setSpeech(window.VEHICLE_CATALOG[targetId].welcomeVoice, true, true);
@@ -618,7 +744,7 @@
   mischiefBtn.addEventListener('click', () => {
     if (isTestDrive) stopTestDrive();
     const st = vehicleStates[currentVehicleId];
-    st.boltsLoose = [true, true, true, true];
+    st.boltsLoose = [true, true, true];
     st.wheelsBroken = [true, false];
     st.primerUnpainted = true;
     st.roofDent = true;
@@ -627,14 +753,13 @@
 
     window.arenAudio.playMischief();
     impulseVehicle(20, -8, -15);
-    mountOrUpdateVehicle();
+    mountOrUpdateVehicle(true);
 
-    const rect = vehicleStage.getBoundingClientRect();
-    spawnVectorParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, 'drill', 30);
+    spawnVectorParticles(layoutMetrics.stageCenterX, layoutMetrics.stageCenterY, 'drill', 22);
     setSpeech('Hahaha! Afacan Aren kamyonu çamura buladı ve lastiğini patlattı! Hadi baştan tamir edelim!', true, true);
   });
 
-  // Test Sürüşü Engelleri (Beyaz Sticker Çerçeveli Stüdyo Vektör)
+  // Test Sürüşü Engelleri (Saf Vektör Beyaz Sticker Çerçeveli)
   function createObstacleSVG(type) {
     if (type === 'cone') {
       return `
@@ -672,8 +797,10 @@
     subPaletteBar.hidden = true;
 
     const st = vehicleStates[currentVehicleId];
-    // isDriving = true ile çağrıldığında patlak tekerlek ve uyarı halkaları gizlenir, gölge ayrılır!
-    drivingVehicle.innerHTML = window.buildCompleteVehicleSVG(currentVehicleId, st, true);
+    window.updateVehicleInPlace(drivingVehicle, currentVehicleId, st, true);
+    cacheDriveRefs();
+    refreshLayoutMetrics();
+
     obstaclesContainer.innerHTML = '';
     obstacles = [];
     drivePhysics.y = 0;
@@ -690,8 +817,9 @@
     testDriveStage.hidden = true;
     obstaclesContainer.innerHTML = '';
     obstacles = [];
-    mountOrUpdateVehicle();
+    mountOrUpdateVehicle(true);
     renderSubPalette();
+    refreshLayoutMetrics();
     setSpeech('Tamirhaneye döndük Usta Aren! Şimdi hangi aracı tamir edelim?', true, true);
   }
 
@@ -702,8 +830,7 @@
     }
     drivePhysics.turboTimer = 42;
     window.arenAudio.playWacky();
-    const rect = drivingVehicle.getBoundingClientRect();
-    spawnVectorParticles(rect.left + 40, rect.bottom - 30, 'wacky', 18);
+    spawnVectorParticles(layoutMetrics.carLeft + 40, layoutMetrics.carBottom - 30, 'wacky', 16);
     addStars(1);
   }
 
@@ -715,8 +842,7 @@
   driveHornBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     window.arenAudio.playHorn();
-    const rect = drivingVehicle.getBoundingClientRect();
-    spawnVectorParticles(rect.right - 20, rect.top + 40, 'wash', 20);
+    spawnVectorParticles(layoutMetrics.carRight - 20, layoutMetrics.carTop + 40, 'wash', 16);
     setSpeech('DÜÜÜT DÜÜÜT! Yolu açın Usta Aren hızla geliyor!', true, false);
   });
 
@@ -754,36 +880,47 @@
       else triggerDriveJump();
       return;
     }
-    const rect = vehicleStage.getBoundingClientRect();
-    const rx = rect.left + rect.width * (0.35 + Math.random() * 0.3);
-    const ry = rect.top + rect.height * (0.35 + Math.random() * 0.3);
+    const rx = layoutMetrics.stageLeft + layoutMetrics.stageWidth * (0.35 + Math.random() * 0.3);
+    const ry = layoutMetrics.stageTop + layoutMetrics.stageHeight * (0.35 + Math.random() * 0.3);
     const hitEl = document.elementFromPoint(rx, ry);
     applyToolAtPoint(currentTool, hitEl, rx, ry);
   });
 
-  // Ana 60FPS Oyun Döngüsü
+  // Ana 60FPS Oyun Döngüsü (Sıfır Layout Thrashing, Boştayken Sıfır DOM/Canvas İşlemi)
   function mainLoop() {
     if (!isTestDrive) {
-      const springForceY = -0.18 * rigPhysics.y;
-      rigPhysics.vy = (rigPhysics.vy + springForceY) * 0.82;
-      rigPhysics.y += rigPhysics.vy;
+      if (rigPhysics.awake) {
+        const springForceY = -0.18 * rigPhysics.y;
+        rigPhysics.vy = (rigPhysics.vy + springForceY) * 0.82;
+        rigPhysics.y += rigPhysics.vy;
 
-      const springForceRot = -0.18 * rigPhysics.rot;
-      rigPhysics.vrot = (rigPhysics.vrot + springForceRot) * 0.82;
-      rigPhysics.rot += rigPhysics.vrot;
+        const springForceRot = -0.18 * rigPhysics.rot;
+        rigPhysics.vrot = (rigPhysics.vrot + springForceRot) * 0.82;
+        rigPhysics.rot += rigPhysics.vrot;
 
-      rigPhysics.wheelVel *= 0.92;
-      rigPhysics.wheelAngle = (rigPhysics.wheelAngle + rigPhysics.wheelVel) % 360;
+        rigPhysics.wheelVel *= 0.91;
+        rigPhysics.wheelAngle = (rigPhysics.wheelAngle + rigPhysics.wheelVel) % 360;
 
-      if (
-        Math.abs(rigPhysics.y) > 0.05 ||
-        Math.abs(rigPhysics.rot) > 0.05 ||
-        Math.abs(rigPhysics.wheelVel) > 0.1
-      ) {
-        applyWorkshopRigTransforms();
+        if (
+          Math.abs(rigPhysics.y) > 0.05 ||
+          Math.abs(rigPhysics.vy) > 0.05 ||
+          Math.abs(rigPhysics.rot) > 0.05 ||
+          Math.abs(rigPhysics.vrot) > 0.05 ||
+          Math.abs(rigPhysics.wheelVel) > 0.08
+        ) {
+          applyWorkshopRigTransforms();
+        } else {
+          rigPhysics.y = 0;
+          rigPhysics.vy = 0;
+          rigPhysics.rot = 0;
+          rigPhysics.vrot = 0;
+          rigPhysics.wheelVel = 0;
+          rigPhysics.awake = false;
+          applyWorkshopRigTransforms();
+        }
       }
     } else {
-      // Test Sürüşü 60FPS Fizik
+      // Test Sürüşü 60FPS Fizik (Önbelleklenmiş Referanslar ve Saf Matematiksel Çarpışma)
       drivePhysics.vy += 0.68;
       drivePhysics.y += drivePhysics.vy;
       if (drivePhysics.y >= 0) {
@@ -797,26 +934,23 @@
       drivePhysics.rot = drivePhysics.y < 0 ? Math.max(-13, drivePhysics.vy * 0.85) : Math.sin(performance.now() * 0.02) * 1.1;
       drivePhysics.wheelAngle = (drivePhysics.wheelAngle + speed * 1.65) % 360;
 
-      // KRİTİK BUG ÇÖZÜMÜ: Zıplama dönüşümü SADECE #vehicle-airborne-group'a uygulanır!
-      // #vehicle-ground-shadow ise yerde sabit kalır ve araba yükseldikçe gerçekçi biçimde küçülür!
-      const airborneGroup = drivingVehicle.querySelector('#vehicle-airborne-group');
-      const groundShadow = drivingVehicle.querySelector('#vehicle-ground-shadow');
-      if (airborneGroup) {
+      if (driveRefs.airborneGroup) {
         const svgJumpY = drivePhysics.y * 1.45;
-        airborneGroup.setAttribute(
+        driveRefs.airborneGroup.setAttribute(
           'transform',
           `translate(0, ${svgJumpY.toFixed(1)}) rotate(${drivePhysics.rot.toFixed(1)} 345 220)`
         );
       }
-      if (groundShadow) {
+      if (driveRefs.groundShadow) {
         const heightRatio = Math.max(0.38, 1 + drivePhysics.y * 0.0042);
-        groundShadow.setAttribute('rx', (235 * heightRatio).toFixed(1));
-        groundShadow.setAttribute('opacity', (0.26 * heightRatio).toFixed(2));
+        driveRefs.groundShadow.setAttribute('rx', (225 * heightRatio).toFixed(1));
+        driveRefs.groundShadow.setAttribute('opacity', (0.24 * heightRatio).toFixed(2));
       }
 
-      drivingVehicle.querySelectorAll('.wheel-spin-node').forEach((w) => {
-        w.setAttribute('transform', `rotate(${drivePhysics.wheelAngle.toFixed(1)})`);
-      });
+      const wheelRotStr = `rotate(${drivePhysics.wheelAngle.toFixed(1)})`;
+      for (let i = 0; i < driveRefs.wheels.length; i++) {
+        driveRefs.wheels[i].setAttribute('transform', wheelRotStr);
+      }
 
       // Yeni Engel Üretimi
       drivePhysics.spawnTimer += 1;
@@ -827,31 +961,31 @@
         const obsEl = document.createElement('div');
         obsEl.className = 'road-obstacle';
         obsEl.innerHTML = createObstacleSVG(type);
-        const startX = window.innerWidth + 60;
-        obsEl.style.transform = `translateX(${startX}px)`;
+        const startX = layoutMetrics.vw + 60;
+        obsEl.style.transform = `translate3d(${startX}px, 0, 0)`;
         obstaclesContainer.appendChild(obsEl);
         obstacles.push({ el: obsEl, x: startX, type, hit: false });
       }
 
-      const carRect = drivingVehicle.getBoundingClientRect();
-      // Çarpışma kutusunu zıplama yüksekliğine göre hesapla
-      const effectiveCarBottom = carRect.bottom + drivePhysics.y;
+      // Saf Matematiksel Çarpışma (mainLoop İçinde getBoundingClientRect Yok!)
+      const hitLeft = layoutMetrics.carLeft + 35;
+      const hitRight = layoutMetrics.carRight - 35;
+      const isLowEnoughToHit = drivePhysics.y > -62;
+
       for (let i = obstacles.length - 1; i >= 0; i--) {
         const obs = obstacles[i];
         obs.x -= speed;
-        obs.el.style.transform = `translateX(${obs.x.toFixed(1)}px)`;
 
-        const obsRect = obs.el.getBoundingClientRect();
         if (
           !obs.hit &&
-          obsRect.left < carRect.right - 35 &&
-          obsRect.right > carRect.left + 35 &&
-          effectiveCarBottom > obsRect.top + 15
+          isLowEnoughToHit &&
+          obs.x < hitRight &&
+          obs.x + 84 > hitLeft
         ) {
           obs.hit = true;
           window.arenAudio.playSmash();
           addStars(2);
-          spawnVectorParticles(obsRect.left + 40, obsRect.top + 40, 'crate', 26);
+          spawnVectorParticles(obs.x + 42, layoutMetrics.carBottom - 36, 'crate', 20);
           obs.el.remove();
           obstacles.splice(i, 1);
           continue;
@@ -860,90 +994,97 @@
         if (obs.x < -120) {
           obs.el.remove();
           obstacles.splice(i, 1);
+          continue;
         }
+
+        obs.el.style.transform = `translate3d(${obs.x.toFixed(1)}px, 0, 0)`;
       }
     }
 
-    // Vektör Parçacık Çizimi
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Vektör Parçacık Çizimi (Sadece aktif parçacık varken çalışır)
+    if (particles.length > 0 || shockwaves.length > 0) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvasDirty = true;
 
-    for (let i = shockwaves.length - 1; i >= 0; i--) {
-      const sw = shockwaves[i];
-      sw.r += 4.5;
-      sw.alpha -= 0.045;
-      if (sw.alpha <= 0) {
-        shockwaves.splice(i, 1);
-        continue;
-      }
-      ctx.save();
-      ctx.globalAlpha = sw.alpha;
-      ctx.strokeStyle = sw.color;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += p.gravity;
-      p.rot += p.vrot;
-      p.life -= p.decay;
-
-      if (p.life <= 0) {
-        particles.splice(i, 1);
-        continue;
-      }
-
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, p.life);
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.rot);
-      ctx.fillStyle = p.color;
-
-      if (p.shape === 'twinkle') {
-        drawFourPointSparkle(ctx, p.size * 1.3);
-      } else if (p.shape === 'star') {
-        drawStarShape(ctx, p.size * 1.15);
-      } else if (p.shape === 'bubble') {
+      for (let i = shockwaves.length - 1; i >= 0; i--) {
+        const sw = shockwaves[i];
+        sw.r += 4.5;
+        sw.alpha -= 0.048;
+        if (sw.alpha <= 0) {
+          shockwaves.splice(i, 1);
+          continue;
+        }
+        ctx.save();
+        ctx.globalAlpha = sw.alpha;
+        ctx.strokeStyle = sw.color;
+        ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.arc(0, 0, p.size * 1.1, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(202, 240, 248, 0.65)';
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#ffffff';
+        ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
         ctx.stroke();
-      } else if (p.shape === 'plank') {
-        ctx.fillRect(-p.size * 1.3, -p.size * 0.45, p.size * 2.6, p.size * 0.9);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#ffffff';
-        ctx.strokeRect(-p.size * 1.3, -p.size * 0.45, p.size * 2.6, p.size * 0.9);
-      } else {
-        ctx.beginPath();
-        ctx.arc(0, 0, p.size * 0.6, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.restore();
       }
-      ctx.restore();
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.rot += p.vrot;
+        p.life -= p.decay;
+
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+
+        if (p.shape === 'twinkle') {
+          drawFourPointSparkle(ctx, p.size * 1.3);
+        } else if (p.shape === 'star') {
+          drawStarShape(ctx, p.size * 1.15);
+        } else if (p.shape === 'bubble') {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size * 1.1, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(202, 240, 248, 0.65)';
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+        } else if (p.shape === 'plank') {
+          ctx.fillRect(-p.size * 1.3, -p.size * 0.45, p.size * 2.6, p.size * 0.9);
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size * 0.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    } else if (canvasDirty) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvasDirty = false;
     }
 
     requestAnimationFrame(mainLoop);
   }
 
   mountStaticSVGIcons();
-  mountOrUpdateVehicle();
+  mountOrUpdateVehicle(true);
+  refreshLayoutMetrics();
   welcomeDialog.showModal();
   requestAnimationFrame(mainLoop);
 
   startGameBtn.addEventListener('click', () => {
     welcomeDialog.close();
+    refreshLayoutMetrics();
     window.arenAudio.ensureContext();
     window.arenAudio.playVictory();
     impulseVehicle(16, -4, 24);
-    const rect = vehicleStage.getBoundingClientRect();
-    spawnVectorParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, 'drill', 28);
+    spawnVectorParticles(layoutMetrics.stageCenterX, layoutMetrics.stageCenterY, 'drill', 22);
     setSpeech('Merhaba Usta Aren! Çılgın Tamirhaneye hoş geldin! Hadi Dev Kamyonu tamir edelim!', true, true);
   });
 })();

@@ -1,4 +1,5 @@
-// Usta Aren'in Çılgın Tamirhanesi - Referans Görsel Kompozisyonlu Stüdyo Vektör Araçlar
+// Usta Aren'in Çılgın Tamirhanesi - 60FPS Tablet GPU Optimize Stüdyo Vektör Araçlar
+// (Ağır SVG feMorphology/feDropShadow filtreleri kaldırıldı; saf GPU vektör beyaz sticker konturları ve yerinde DOM güncellemesi kullanıldı)
 
 const PAINT_PALETTE = [
   { name: 'Katerpilar Sarısı', primary: '#ff9f1c', light: '#ffbf69', dark: '#e07a00', deep: '#b35c00', accent: '#2b2d42' },
@@ -121,32 +122,20 @@ function createInitialVehicleState(vehicleId) {
   };
 }
 
+// Sıfır SVG Filtresi: Saf Vektör Gradyanlar (Tablet GPU'da 0ms Rasterizasyon Maliyeti)
 function renderVehicleDefs(u, palette) {
   return `
     <defs>
-      <!-- Referans Görseldeki Beyaz Die-Cut Sticker Çerçevesi + Yumuşak Gölge (Geniş Bölge, Kesilme Yok!) -->
-      <filter id="sticker_${u}" x="-25%" y="-35%" width="150%" height="170%">
-        <feMorphology in="SourceAlpha" operator="dilate" radius="4.5" result="dilated"/>
-        <feFlood flood-color="#ffffff" result="white"/>
-        <feComposite in="white" in2="dilated" operator="in" result="stickerBorder"/>
-        <feDropShadow in="stickerBorder" dx="0" dy="5" stdDeviation="4" flood-color="#0a2540" flood-opacity="0.26" result="BorderShadow"/>
-        <feMerge>
-          <feMergeNode in="BorderShadow"/>
-          <feMergeNode in="stickerBorder"/>
-          <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-      </filter>
-
       <linearGradient id="paintMain_${u}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${palette.light}"/>
-        <stop offset="18%" stop-color="${palette.primary}"/>
-        <stop offset="85%" stop-color="${palette.dark}"/>
-        <stop offset="100%" stop-color="${palette.deep}"/>
+        <stop data-stop="light" offset="0%" stop-color="${palette.light}"/>
+        <stop data-stop="primary" offset="18%" stop-color="${palette.primary}"/>
+        <stop data-stop="dark" offset="85%" stop-color="${palette.dark}"/>
+        <stop data-stop="deep" offset="100%" stop-color="${palette.deep}"/>
       </linearGradient>
 
       <linearGradient id="paintSide_${u}" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="${palette.primary}"/>
-        <stop offset="100%" stop-color="${palette.dark}"/>
+        <stop data-stop="side-primary" offset="0%" stop-color="${palette.primary}"/>
+        <stop data-stop="side-dark" offset="100%" stop-color="${palette.dark}"/>
       </linearGradient>
 
       <linearGradient id="primerSteel_${u}" x1="0" y1="0" x2="0" y2="1">
@@ -181,7 +170,7 @@ function renderVehicleDefs(u, palette) {
   `;
 }
 
-// Referans Görseldeki Detaylı İş Makinesi Tekerleği + Patlak Lastik & Saplanmış Yapraklı Dal
+// Referans Görseldeki Detaylı İş Makinesi Tekerleği + Patlak Lastik & Saplanmış Yapraklı Dal (Saf Vektör Beyaz Sticker Konturlu)
 function renderStudioWheelSVG(wheelCfg, idx, wheelType, isBroken, u, isDriving = false) {
   const { x, y, r } = wheelCfg;
 
@@ -191,9 +180,16 @@ function renderStudioWheelSVG(wheelCfg, idx, wheelType, isBroken, u, isDriving =
         <!-- Hava Kaçırma Bulutu (Referans Görseldeki Beyaz Puf) -->
         <g class="air-leak-puff" transform="translate(${-r - 28}, ${-r * 0.52})">
           <path d="M 22 16 C 6 20, -16 16, -20 2 C -28 -8, -20 -24, -4 -20 C 6 -32, 26 -24, 24 -8 C 32 -2, 30 12, 22 16 Z"
-            fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+            fill="#f8f9fa" stroke="#ffffff" stroke-width="5" paint-order="stroke fill"/>
           <path d="M 28 10 L 46 18 M 26 2 L 44 6" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
         </g>
+
+        <!-- Beyaz Sticker Dış Kontur (Filtresiz Saf Vektör) -->
+        <path d="M ${-r * 1.25} ${r * 0.84}
+                 C ${-r * 1.15} ${r * 0.44}, ${-r * 0.82} ${-r * 0.86}, 0 ${-r * 0.86}
+                 C ${r * 0.82} ${-r * 0.86}, ${r * 1.15} ${r * 0.44}, ${r * 1.25} ${r * 0.84}
+                 Q 0 ${r * 0.96} ${-r * 1.25} ${r * 0.84} Z"
+          fill="#ffffff" stroke="#ffffff" stroke-width="11" stroke-linejoin="round"/>
 
         <!-- Yere Yayılmış Sönük Kauçuk Lastik Gövdesi -->
         <path d="M ${-r * 1.25} ${r * 0.84}
@@ -215,9 +211,9 @@ function renderStudioWheelSVG(wheelCfg, idx, wheelType, isBroken, u, isDriving =
         <!-- Yırtık Patlak Deliği ve İçinden Çıkan Yapraklı Dal -->
         <g transform="translate(${-r * 0.32}, ${-r * 0.58})">
           <polygon points="-16,8 -8,-6 0,2 10,-8 14,6 6,16 -8,14" fill="#111315" stroke="#6c757d" stroke-width="2"/>
-          <path d="M -2 10 L -14 -24 L -6 -26 L 6 8 Z" fill="#9c6644"/>
-          <path d="M -12 -20 C -28 -26, -34 -12, -14 -10 Z" fill="#38b000"/>
-          <path d="M -8 -22 C -2 -36, 14 -28, -4 -14 Z" fill="#70e000"/>
+          <path d="M -2 10 L -14 -24 L -6 -26 L 6 8 Z" fill="#9c6644" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke fill"/>
+          <path d="M -12 -20 C -28 -26, -34 -12, -14 -10 Z" fill="#38b000" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke fill"/>
+          <path d="M -8 -22 C -2 -36, 14 -28, -4 -14 Z" fill="#70e000" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke fill"/>
         </g>
       </g>
     `;
@@ -227,6 +223,7 @@ function renderStudioWheelSVG(wheelCfg, idx, wheelType, isBroken, u, isDriving =
 
   if (wheelType === 'donut') {
     wheelGraphic = `
+      <circle cx="0" cy="0" r="${r + 5}" fill="#ffffff"/>
       <circle cx="0" cy="0" r="${r}" fill="#383b3e" stroke="#242628" stroke-width="4" stroke-dasharray="16 7"/>
       <circle cx="0" cy="0" r="${r * 0.88}" fill="#d97706"/>
       <circle cx="0" cy="0" r="${r * 0.74}" fill="#ff4d8d"/>
@@ -241,6 +238,7 @@ function renderStudioWheelSVG(wheelCfg, idx, wheelType, isBroken, u, isDriving =
   } else if (wheelType === 'monster') {
     const mr = r * 1.12;
     wheelGraphic = `
+      <circle cx="0" cy="0" r="${mr + 6}" fill="#ffffff"/>
       <circle cx="0" cy="0" r="${mr}" fill="#25282a" stroke="#3a3d40" stroke-width="10" stroke-dasharray="18 9"/>
       <circle cx="0" cy="0" r="${mr * 0.84}" fill="#3a3d40"/>
       <circle cx="0" cy="0" r="${mr * 0.68}" fill="#1e2022"/>
@@ -252,11 +250,12 @@ function renderStudioWheelSVG(wheelCfg, idx, wheelType, isBroken, u, isDriving =
     wheelGraphic = `
       <ellipse cx="0" cy="${r * 0.45}" rx="${r * 0.92}" ry="${r * 0.26}" fill="#00b4d8" opacity="0.55"/>
       <ellipse cx="0" cy="${r * 0.45}" rx="${r * 0.58}" ry="${r * 0.14}" fill="#caf0f8"/>
-      <path d="M ${-r*0.82} -14 L ${r*0.82} -14 L ${r*0.6} 18 L ${-r*0.6} 18 Z" fill="#495057" stroke="#adb5bd" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M ${-r*0.82} -14 L ${r*0.82} -14 L ${r*0.6} 18 L ${-r*0.6} 18 Z" fill="#495057" stroke="#ffffff" stroke-width="8" stroke-linejoin="round" paint-order="stroke fill"/>
       <rect x="${-r*0.48}" y="-6" width="${r*0.96}" height="10" rx="5" fill="#00f5d4"/>
     `;
   } else if (wheelType === 'gear') {
     wheelGraphic = `
+      <circle cx="0" cy="0" r="${r + 5}" fill="#ffffff"/>
       <circle cx="0" cy="0" r="${r}" fill="#f59e0b" stroke="#b45309" stroke-width="9" stroke-dasharray="15 8"/>
       <circle cx="0" cy="0" r="${r * 0.8}" fill="#fbbf24"/>
       <circle cx="0" cy="0" r="${r * 0.52}" fill="#495057"/>
@@ -271,6 +270,7 @@ function renderStudioWheelSVG(wheelCfg, idx, wheelType, isBroken, u, isDriving =
       lugDots += `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2.6" fill="#7f4f24"/>`;
     }
     wheelGraphic = `
+      <circle cx="0" cy="0" r="${r + 5}" fill="#ffffff"/>
       <circle cx="0" cy="0" r="${r}" fill="#2b2d2f" stroke="#3a3d40" stroke-width="8" stroke-dasharray="15 7"/>
       <circle cx="0" cy="0" r="${r * 0.86}" fill="#495057"/>
       <circle cx="0" cy="0" r="${r * 0.72}" fill="#2b2d2f"/>
@@ -292,7 +292,7 @@ function renderStudioWheelSVG(wheelCfg, idx, wheelType, isBroken, u, isDriving =
   `;
 }
 
-// Referans Görseldeki Düzensiz Sıçramış Pas & Çamur Katmanı (Damperin Sol Kenarını Kaplayan Gerçekçi Doku)
+// Referans Görseldeki Düzensiz Sıçramış Pas & Çamur Katmanı
 function renderAuthenticRustMudSVG(mudLevels, u, isDriving = false) {
   if (isDriving) return '';
   const totalMud = mudLevels.reduce((acc, v) => acc + v, 0) / mudLevels.length;
@@ -306,7 +306,7 @@ function renderAuthenticRustMudSVG(mudLevels, u, isDriving = false) {
 
   return `
     <g class="mud-blob interactive-part" data-part="mud" data-mud-index="0" opacity="${Math.min(1, totalMud * 1.15).toFixed(2)}">
-      <!-- Koyu Kahve Alt Pas/Çamur Yığını (Referans görseldeki kasanın sol ucundaki organik sıçrama) -->
+      <!-- Koyu Kahve Alt Pas/Çamur Yığını (Saf Vektör Beyaz Sticker Konturlu) -->
       <path d="M 142 115
                C 155 102, 185 108, 198 112
                C 218 104, 255 106, 272 114
@@ -315,7 +315,7 @@ function renderAuthenticRustMudSVG(mudLevels, u, isDriving = false) {
                C 224 182, 204 196, 178 192
                C 154 186, 134 166, 142 146
                C 132 134, 136 122, 142 115 Z"
-        fill="#4a2103"/>
+        fill="#4a2103" stroke="#ffffff" stroke-width="8" stroke-linejoin="round" paint-order="stroke fill"/>
 
       <!-- Orta Katman Paslı Turuncu-Kahve Dalgalar -->
       <path d="M 148 122
@@ -332,17 +332,17 @@ function renderAuthenticRustMudSVG(mudLevels, u, isDriving = false) {
       <path d="M 205 124 C 218 118, 236 122, 228 134 C 220 144, 202 136, 205 124 Z"
         fill="#c67d30" opacity="0.8"/>
 
-      <!-- Etrafa Fırlayan Çamur/Pas Parçacıkları (Referans görselde taşlama diskinin etrafındaki parçalar) -->
-      <path d="M 88 92 C 94 84, 112 86, 108 98 C 102 106, 84 102, 88 92 Z" fill="#8b4513"/>
-      <path d="M 118 82 C 124 76, 138 80, 134 90 C 128 96, 114 90, 118 82 Z" fill="#6f3b11"/>
-      <path d="M 116 178 C 124 170, 138 176, 132 188 C 122 196, 110 186, 116 178 Z" fill="#8b4513"/>
+      <!-- Etrafa Fırlayan Çamur/Pas Parçacıkları -->
+      <path d="M 88 92 C 94 84, 112 86, 108 98 C 102 106, 84 102, 88 92 Z" fill="#8b4513" stroke="#ffffff" stroke-width="4" paint-order="stroke fill"/>
+      <path d="M 118 82 C 124 76, 138 80, 134 90 C 128 96, 114 90, 118 82 Z" fill="#6f3b11" stroke="#ffffff" stroke-width="4" paint-order="stroke fill"/>
+      <path d="M 116 178 C 124 170, 138 176, 132 188 C 122 196, 110 186, 116 178 Z" fill="#8b4513" stroke="#ffffff" stroke-width="4" paint-order="stroke fill"/>
       <circle cx="144" cy="96" r="5" fill="#7f4f24"/>
       <circle cx="132" cy="162" r="4.5" fill="#582f0e"/>
     </g>
   `;
 }
 
-// Referans Görseldeki Sahne Üstü Aktif Aletler (Sol Üstte Taşlama, Sol Altta Yeşil Pompa, Üstte Boya Fırçası)
+// Referans Görseldeki Sahne Üstü Aktif Aletler (Saf Vektör Beyaz Sticker Konturlu - Filtresiz 60FPS)
 function renderSceneInteractiveToolsSVG(state, isDriving = false) {
   if (isDriving) return '';
   const hasMud = state.mudLevels.some((m) => m > 0.05);
@@ -351,10 +351,15 @@ function renderSceneInteractiveToolsSVG(state, isDriving = false) {
 
   let html = '';
 
-  // 1. Sol Üst: Pas/Çamur Varsa Dönen Sarı Taşlama Makinesi (Referans görseldeki birebir konum ve açı!)
+  // 1. Sol Üst: Pas/Çamur Varsa Dönen Sarı Taşlama Makinesi
   if (hasMud) {
     html += `
       <g transform="translate(86, 136)" class="scene-hero-tool interactive-part" data-part="mud" data-scene-tool="drill">
+        <!-- Saf Vektör Beyaz Sticker Kontur -->
+        <g stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
+          <rect x="-64" y="-13" width="66" height="26" rx="11" fill="#ffffff" transform="rotate(-18)"/>
+          <circle cx="20" cy="-2" r="28" fill="#ffffff"/>
+        </g>
         <!-- Sap (Sarı-Turuncu-Siyah) -->
         <g transform="rotate(-18)">
           <rect x="-64" y="-13" width="66" height="26" rx="11" fill="#ff9f1c"/>
@@ -377,17 +382,26 @@ function renderSceneInteractiveToolsSVG(state, isDriving = false) {
           <circle cx="20" cy="-2" r="8" fill="#2b2d42"/>
           <circle cx="20" cy="-2" r="3.5" fill="#adb5bd"/>
         </g>
-        <!-- Parlak Sarı Kıvılcım Parlaması (Tam Pasla Temas Noktasında!) -->
+        <!-- Parlak Sarı Kıvılcım Parlaması -->
         <circle cx="48" cy="-6" r="11" fill="#fff3b0" opacity="0.85" class="hint-pulse"/>
         <circle cx="48" cy="-6" r="6" fill="#ffbe0b"/>
       </g>
     `;
   }
 
-  // 2. Sol Alt: Patlak Tekerlek Varsa Yeşil Basınç Göstergeli Hava Pompası ve Hortumu (Referans görseldeki birebir konum!)
+  // 2. Sol Alt: Patlak Tekerlek Varsa Yeşil Basınç Göstergeli Hava Pompası ve Hortumu
   if (hasFlatTire) {
     html += `
       <g transform="translate(68, 242)" class="scene-hero-tool interactive-part" data-part="wheel" data-scene-tool="wrench">
+        <!-- Saf Vektör Beyaz Sticker Kontur -->
+        <g stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" fill="#ffffff">
+          <rect x="-26" y="-68" width="52" height="11" rx="5.5"/>
+          <rect x="-5" y="-55" width="10" height="26"/>
+          <path d="M -28 68 L -22 14 C -22 -6, 22 -6, 22 14 L 28 68 Z"/>
+          <rect x="-34" y="66" width="68" height="10" rx="5"/>
+          <path d="M 24 56 C 65 62, 92 84, 145 78 C 192 72, 232 94, 248 54 C 256 34, 242 18, 246 -4" fill="none" stroke-width="16"/>
+          <rect x="-9" y="-14" width="18" height="28" rx="4" transform="translate(248, -18) rotate(14)"/>
+        </g>
         <!-- T-Kol Tutamaç -->
         <rect x="-26" y="-68" width="52" height="11" rx="5.5" fill="#495057"/>
         <rect x="-10" y="-70" width="20" height="15" rx="3.5" fill="#ff8800"/>
@@ -414,10 +428,17 @@ function renderSceneInteractiveToolsSVG(state, isDriving = false) {
     `;
   }
 
-  // 3. Üst Orta: Kasa Henüz Boyanmadıysa Boya Fırçası ve Turuncu Boya Dalgası (Referans görseldeki birebir konum!)
+  // 3. Üst Orta: Kasa Henüz Boyanmadıysa Boya Fırçası ve Turuncu Boya Dalgası
   if (isUnpainted) {
     html += `
       <g transform="translate(362, 68)" class="scene-hero-tool interactive-part" data-part="body" data-scene-tool="paint">
+        <!-- Saf Vektör Beyaz Sticker Kontur -->
+        <g stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" fill="#ffffff">
+          <path d="M -28 8 C -34 38, -18 68, 4 68 C 14 68, 12 52, 4 44 C 18 54, 30 48, 20 32 C 34 36, 38 24, 22 10 Z"/>
+          <path d="M -28 10 C -30 -14, 4 -28, 26 -26 L 14 2 C 2 14, -16 18, -28 10 Z"/>
+          <polygon points="-2,-2 28,-26 38,-16 8,8"/>
+          <path d="M 18 -6 L 48 10 C 52 14, 46 22, 38 18 L 8 2 Z"/>
+        </g>
         <!-- Sürülen Canlı Sarı-Turuncu Boya Dalgaları -->
         <path d="M -28 8 C -34 38, -18 68, 4 68 C 14 68, 12 52, 4 44 C 18 54, 30 48, 20 32 C 34 36, 38 24, 22 10 Z"
           fill="#ff9f1c" stroke="#e07a00" stroke-width="2.5"/>
@@ -438,7 +459,7 @@ function renderSceneInteractiveToolsSVG(state, isDriving = false) {
   return html;
 }
 
-// Mekanik Somun ve Cıvatalar (Gereksiz Kesikli Çizgi Yok, Temiz Metalik Somunlar)
+// Mekanik Somun ve Cıvatalar
 function renderBoltsLayerSVG(boltPositions, boltsLoose, isDriving = false) {
   return boltPositions.map((pos, idx) => {
     const isLoose = boltsLoose[idx] && !isDriving;
@@ -457,13 +478,13 @@ function renderBoltsLayerSVG(boltPositions, boltsLoose, isDriving = false) {
   }).join('');
 }
 
-// Tavan Modifiyeleri (Kabin/Siperlik Üstünde Doğru Katmanda!)
+// Tavan Modifiyeleri (Saf Vektör Beyaz Sticker Konturlu)
 function renderRoofModSVG(x, y, roofType) {
   if (roofType === 'rocket') {
     return `
       <g transform="translate(${x}, ${y})" class="interactive-part" data-part="roof">
+        <path d="M -46 -8 L -22 -42 L 32 -42 L 50 -8 Z" fill="#e63946" stroke="#ffffff" stroke-width="9" stroke-linejoin="round" paint-order="stroke fill"/>
         <rect x="-10" y="-10" width="20" height="12" fill="#343a40"/>
-        <path d="M -46 -8 L -22 -42 L 32 -42 L 50 -8 Z" fill="#e63946"/>
         <path d="M -20 -36 L 28 -36 L 34 -26 L -26 -26 Z" fill="#ffbe0b"/>
         <polygon points="-46,-8 -58,-2 -58,-38 -34,-32" fill="#2b2d42"/>
         <path d="M -58 -6 C -92 -10, -104 -20, -120 -20 C -104 -28, -88 -34, -58 -34 Z" fill="#ff9f1c" class="turbo-flame"/>
@@ -475,7 +496,7 @@ function renderRoofModSVG(x, y, roofType) {
   if (roofType === 'dino') {
     return `
       <g transform="translate(${x}, ${y})" class="interactive-part" data-part="roof">
-        <path d="M -42 -2 C -42 -46, 34 -50, 46 -12 L 22 -8 L 34 -2 L -42 -2 Z" fill="#2ec4b6"/>
+        <path d="M -42 -2 C -42 -46, 34 -50, 46 -12 L 22 -8 L 34 -2 L -42 -2 Z" fill="#2ec4b6" stroke="#ffffff" stroke-width="9" stroke-linejoin="round" paint-order="stroke fill"/>
         <polygon points="-36,-16 -50,-32 -26,-30" fill="#ffbe0b"/>
         <polygon points="-16,-32 -24,-52 -2,-38" fill="#ffbe0b"/>
         <polygon points="8,-34 8,-54 24,-30" fill="#ffbe0b"/>
@@ -489,9 +510,9 @@ function renderRoofModSVG(x, y, roofType) {
   if (roofType === 'rotor') {
     return `
       <g transform="translate(${x}, ${y})" class="interactive-part" data-part="roof">
-        <rect x="-6" y="-34" width="12" height="34" rx="4" fill="#8d99ae"/>
+        <rect x="-6" y="-34" width="12" height="34" rx="4" fill="#8d99ae" stroke="#ffffff" stroke-width="7" paint-order="stroke fill"/>
         <g class="rotor-blades">
-          <rect x="-82" y="-40" width="164" height="8" rx="4" fill="#ffbe0b"/>
+          <rect x="-82" y="-40" width="164" height="8" rx="4" fill="#ffbe0b" stroke="#ffffff" stroke-width="6" paint-order="stroke fill"/>
           <rect x="-72" y="-38" width="28" height="4" fill="#e63946"/>
           <rect x="44" y="-38" width="28" height="4" fill="#e63946"/>
         </g>
@@ -503,18 +524,20 @@ function renderRoofModSVG(x, y, roofType) {
   if (roofType === 'siren') {
     return `
       <g transform="translate(${x}, ${y})" class="interactive-part" data-part="roof">
-        <rect x="-34" y="-10" width="68" height="10" rx="3" fill="#adb5bd"/>
-        <path d="M -28 -10 C -28 -32, -4 -32, -4 -10 Z" fill="#e63946"/>
-        <path d="M 4 -10 C 4 -32, 28 -32, 28 -10 Z" fill="#0077b6"/>
+        <rect x="-34" y="-10" width="68" height="10" rx="3" fill="#adb5bd" stroke="#ffffff" stroke-width="8" stroke-linejoin="round" paint-order="stroke fill"/>
+        <path d="M -28 -10 C -28 -32, -4 -32, -4 -10 Z" fill="#e63946" stroke="#ffffff" stroke-width="7" stroke-linejoin="round" paint-order="stroke fill"/>
+        <path d="M 4 -10 C 4 -32, 28 -32, 28 -10 Z" fill="#0077b6" stroke="#ffffff" stroke-width="7" stroke-linejoin="round" paint-order="stroke fill"/>
         <circle cx="-16" cy="-18" r="5" fill="#fff3b0"/>
         <circle cx="16" cy="-18" r="5" fill="#caf0f8"/>
       </g>
     `;
   }
 
-  // Referans Görseldeki Kabin Önü Projektör Lambası (x=525, y=94 hizasında)
+  // Referans Görseldeki Kabin Önü Projektör Lambası
   return `
     <g transform="translate(${x}, ${y + 22})" class="interactive-part" data-part="roof">
+      <path d="M -22 6 L -16 -10 L 2 -10" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 6 -22 C 26 -24, 28 4, 6 2 Z" fill="#ffffff" stroke="#ffffff" stroke-width="9" stroke-linejoin="round"/>
       <path d="M -22 6 L -16 -10 L 2 -10" fill="none" stroke="#343a40" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
       <rect x="-2" y="-14" width="10" height="8" rx="2" fill="#343a40"/>
       <path d="M 6 -22 C 26 -24, 28 4, 6 2 Z" fill="#ff9f1c"/>
@@ -523,7 +546,7 @@ function renderRoofModSVG(x, y, roofType) {
   `;
 }
 
-// 4 Stüdyo Kalitesinde Araç Gövdesi
+// 4 Stüdyo Kalitesinde Araç Gövdesi (Saf Vektör Beyaz Sticker Konturlu, Filtresiz 60FPS)
 function renderStudioBodySVG(vehicleId, state, u) {
   const bodyFill = `url(#paintMain_${u})`;
   const sideFill = `url(#paintSide_${u})`;
@@ -531,6 +554,13 @@ function renderStudioBodySVG(vehicleId, state, u) {
 
   if (vehicleId === 'tractor') {
     return `
+      <!-- Saf Vektör Beyaz Die-Cut Sticker Dış Çerçevesi (GPU Hızlandırmalı, 0ms Filtre Yükü) -->
+      <g stroke="#ffffff" stroke-width="11" stroke-linejoin="round" stroke-linecap="round" fill="#ffffff">
+        <path d="M 152 108 L 408 108 L 464 76 C 472 72, 484 70, 496 70 L 556 70 C 566 70, 568 86, 554 88 L 532 94 L 542 164 L 594 164 L 604 168 L 604 252 L 578 264 L 465 270 L 185 270 L 195 182 L 148 118 Z"/>
+        <path d="M 495 164 L 495 134 L 578 134 L 578 164" fill="none" stroke-width="13"/>
+        <path d="M 522 164 L 522 124 L 594 124 L 594 164" fill="none" stroke-width="13"/>
+      </g>
+
       <!-- Koyu Antrasit Alt Şasi ve Çamurluk Oyukları -->
       <path d="M 195 182 L 425 182 L 465 270 L 185 270 Z" fill="url(#darkChassis_${u})"/>
       <path d="M 408 268 A 78 78 0 0 1 588 268 Z" fill="#1b1e21"/>
@@ -545,7 +575,7 @@ function renderStudioBodySVG(vehicleId, state, u) {
 
       <!-- Dev Damperli Kasa -->
       <g class="interactive-part" data-part="body">
-        <path d="M 148 118 L 408 118 L 388 212 L 215 182 Z" fill="${bedFill}"/>
+        <path id="bed-main-path" d="M 148 118 L 408 118 L 388 212 L 215 182 Z" fill="${bedFill}"/>
         <rect x="152" y="108" width="256" height="16" rx="4" fill="#ced4da"/>
         <rect x="152" y="122" width="256" height="6" fill="#6c757d"/>
         <!-- Eğimli Kaburga Destekleri -->
@@ -606,6 +636,11 @@ function renderStudioBodySVG(vehicleId, state, u) {
     const armRot = state.bucketAngle || 0;
     return `
       <g transform="translate(425, 168) rotate(${armRot})" class="excavator-arm interactive-part" data-part="arm">
+        <g stroke="#ffffff" stroke-width="11" stroke-linejoin="round" stroke-linecap="round" fill="#ffffff">
+          <path d="M 0 0 L 88 -86 L 122 -70 L 28 24 Z"/>
+          <path d="M 94 -78 L 168 -8 L 146 10 L 80 -60 Z"/>
+          <path d="M 144 0 C 180 0, 202 38, 166 66 L 118 50 L 134 18 Z"/>
+        </g>
         <path d="M 0 0 L 88 -86 L 122 -70 L 28 24 Z" fill="${bodyFill}"/>
         <line x1="16" y1="-26" x2="74" y2="-78" stroke="#ced4da" stroke-width="9" stroke-linecap="round"/>
         <path d="M 94 -78 L 168 -8 L 146 10 L 80 -60 Z" fill="${sideFill}"/>
@@ -614,6 +649,8 @@ function renderStudioBodySVG(vehicleId, state, u) {
         <polygon points="148,60 164,70 156,52" fill="#ffbe0b"/>
       </g>
 
+      <path d="M 172 224 L 182 132 L 268 132 L 286 84 L 408 84 L 438 162 L 455 224 L 475 264 L 180 264 Z"
+        fill="#ffffff" stroke="#ffffff" stroke-width="11" stroke-linejoin="round"/>
       <rect x="180" y="218" width="295" height="46" rx="18" fill="url(#darkChassis_${u})"/>
       <path d="M 172 224 L 182 132 L 268 132 L 286 84 L 408 84 L 438 162 L 455 224 Z" fill="${bodyFill}"/>
       <path d="M 178 142 L 262 142 L 262 208 L 178 208 Z" fill="${bedFill}"/>
@@ -627,6 +664,7 @@ function renderStudioBodySVG(vehicleId, state, u) {
     const ladderTilt = state.roofDent ? -7 : 0;
     return `
       <g transform="translate(295, 82) rotate(${ladderTilt})" class="interactive-part" data-part="roof">
+        <rect x="-125" y="-12" width="250" height="20" rx="5" fill="#dee2e6" stroke="#ffffff" stroke-width="9" paint-order="stroke fill"/>
         <rect x="-125" y="-12" width="250" height="20" rx="5" fill="#dee2e6" stroke="#6c757d" stroke-width="2.5"/>
         <line x1="-95" y1="-12" x2="-95" y2="8" stroke="#6c757d" stroke-width="4"/>
         <line x1="-45" y1="-12" x2="-45" y2="8" stroke="#6c757d" stroke-width="4"/>
@@ -635,6 +673,8 @@ function renderStudioBodySVG(vehicleId, state, u) {
         <line x1="100" y1="-12" x2="100" y2="8" stroke="#6c757d" stroke-width="4"/>
       </g>
 
+      <path d="M 158 96 L 518 96 L 562 172 L 562 236 L 572 236 L 572 256 L 148 256 L 148 236 L 158 236 Z"
+        fill="#ffffff" stroke="#ffffff" stroke-width="11" stroke-linejoin="round"/>
       <rect x="175" y="218" width="380" height="44" rx="14" fill="url(#darkChassis_${u})"/>
       <rect x="158" y="96" width="265" height="152" rx="14" fill="${bodyFill}"/>
       <path d="M 414 96 L 518 96 L 562 172 L 562 248 L 414 248 Z" fill="${sideFill}"/>
@@ -648,6 +688,8 @@ function renderStudioBodySVG(vehicleId, state, u) {
   }
 
   return `
+    <path d="M 158 204 L 176 132 L 268 132 L 306 78 L 436 78 L 478 132 L 568 142 L 576 204 L 540 241 L 205 241 Z"
+      fill="#ffffff" stroke="#ffffff" stroke-width="11" stroke-linejoin="round"/>
     <rect x="205" y="205" width="335" height="36" rx="12" fill="url(#darkChassis_${u})"/>
     <line x1="250" y1="235" x2="315" y2="195" stroke="#adb5bd" stroke-width="9" stroke-linecap="round"/>
     <line x1="495" y1="235" x2="430" y2="195" stroke="#adb5bd" stroke-width="9" stroke-linecap="round"/>
@@ -660,55 +702,173 @@ function renderStudioBodySVG(vehicleId, state, u) {
   `;
 }
 
+function renderDecalsLayerSVG(cfg, decals) {
+  return decals.map((key, idx) => {
+    const slot = cfg.decalSlots[idx % cfg.decalSlots.length];
+    return window.DECAL_SVGS[key] ? window.DECAL_SVGS[key](slot.x, slot.y) : '';
+  }).join('');
+}
+
+function computeLayerSignatures(vehicleId, state, isDriving) {
+  const totalMud = state.mudLevels.reduce((acc, v) => acc + v, 0) / state.mudLevels.length;
+  const hasMud = totalMud > 0.05;
+  return {
+    paletteSig: `${state.colorIndex}`,
+    bodySig: `${vehicleId}|${state.primerUnpainted}|${state.bucketAngle}|${state.roofDent}`,
+    roofSig: `${vehicleId}|${state.roofType}`,
+    decalsSig: state.decals.join(','),
+    mudBinarySig: `${isDriving}|${hasMud ? 'dirty' : 'clean'}`,
+    mudOpacity: Math.min(1, totalMud * 1.15).toFixed(2),
+    boltsSig: `${isDriving}|${state.boltsLoose.join(',')}`,
+    wheelsSig: `${isDriving}|${state.wheelType}|${state.wheelsBroken.join(',')}`,
+    toolsSig: `${isDriving}|${hasMud}|${state.wheelsBroken[0]}|${state.primerUnpainted}`
+  };
+}
+
 function buildCompleteVehicleSVG(vehicleId, state, isDriving = false) {
   const cfg = VEHICLE_CATALOG[vehicleId];
   const palette = PAINT_PALETTE[state.colorIndex % PAINT_PALETTE.length];
   const u = window.uid('veh');
+  const sigs = computeLayerSignatures(vehicleId, state, isDriving);
 
   const wheelsMarkup = cfg.wheelPositions
     .map((w, i) => renderStudioWheelSVG(w, i, state.wheelType, state.wheelsBroken[i], u, isDriving))
     .join('');
 
   return `
-    <svg class="vehicle-svg" viewBox="0 0 680 360" role="img" aria-label="${cfg.title}">
+    <svg class="vehicle-svg" viewBox="0 0 680 360" role="img" aria-label="${cfg.title}"
+      data-vehicle-id="${vehicleId}" data-uid="${u}" data-driving="${isDriving}">
       ${renderVehicleDefs(u, palette)}
 
       <!-- SABİT ZEMİN GÖLGESİ (Araç zıpladığında yerde kalır!) -->
       <ellipse id="vehicle-ground-shadow" cx="385" cy="332" rx="225" ry="18" fill="#0f172a" opacity="0.22"/>
 
-      <!-- HAVALANABİLEN ARAÇ VE SAHNE ALET GRUBU (Beyaz Sticker Çerçeveli) -->
-      <g id="vehicle-airborne-group" filter="url(#sticker_${u})">
+      <!-- HAVALANABİLEN ARAÇ VE SAHNE ALET GRUBU (Filtresiz Saf Vektör Sticker Konturlu - 60FPS Tablet GPU) -->
+      <g id="vehicle-airborne-group">
         <g id="chassis-rig" class="chassis-rig">
-          <g id="body-shell" class="interactive-part" data-part="body">
+          <g id="body-shell" class="interactive-part" data-part="body" data-sig="${sigs.bodySig}">
             ${renderStudioBodySVG(vehicleId, state, u)}
           </g>
-          <!-- Tavan Modifiyesi ve Projektör Gövdenin ÜSTÜNDE Render Edilir (Kesilmez!) -->
-          ${renderRoofModSVG(cfg.roofAnchor.x, cfg.roofAnchor.y, state.roofType)}
-          <g id="decals-layer">
-            ${state.decals.map((key, idx) => {
-              const slot = cfg.decalSlots[idx % cfg.decalSlots.length];
-              return window.DECAL_SVGS[key] ? window.DECAL_SVGS[key](slot.x, slot.y) : '';
-            }).join('')}
+          <g id="roof-mod-layer" data-sig="${sigs.roofSig}">
+            ${renderRoofModSVG(cfg.roofAnchor.x, cfg.roofAnchor.y, state.roofType)}
           </g>
-          <g id="mud-layer">
+          <g id="decals-layer" data-sig="${sigs.decalsSig}">
+            ${renderDecalsLayerSVG(cfg, state.decals)}
+          </g>
+          <g id="mud-layer" data-sig="${sigs.mudBinarySig}">
             ${renderAuthenticRustMudSVG(state.mudLevels, u, isDriving)}
           </g>
-          <g id="bolts-layer">
+          <g id="bolts-layer" data-sig="${sigs.boltsSig}">
             ${renderBoltsLayerSVG(cfg.boltPositions, state.boltsLoose, isDriving)}
           </g>
         </g>
 
-        <g id="wheels-layer">
+        <g id="wheels-layer" data-sig="${sigs.wheelsSig}">
           ${wheelsMarkup}
         </g>
 
-        <!-- Referans Görseldeki Sahne Üstü Aktif Aletler (Taşlama, Hava Pompası, Boya Fırçası) -->
-        <g id="scene-tools-layer">
+        <g id="scene-tools-layer" data-sig="${sigs.toolsSig}">
           ${renderSceneInteractiveToolsSVG(state, isDriving)}
         </g>
       </g>
     </svg>
   `;
+}
+
+// Tabletlerde DOM Thrashing'i Önleyen Yerinde (In-Place) Alt Katman Güncelleyici
+function updateVehicleInPlace(containerEl, vehicleId, state, isDriving = false) {
+  const existingSvg = containerEl.querySelector('svg.vehicle-svg');
+  if (
+    !existingSvg ||
+    existingSvg.dataset.vehicleId !== vehicleId ||
+    existingSvg.dataset.driving !== String(isDriving)
+  ) {
+    containerEl.innerHTML = buildCompleteVehicleSVG(vehicleId, state, isDriving);
+    return true; // Tam montaj yapıldı
+  }
+
+  const u = existingSvg.dataset.uid;
+  const cfg = VEHICLE_CATALOG[vehicleId];
+  const palette = PAINT_PALETTE[state.colorIndex % PAINT_PALETTE.length];
+  const sigs = computeLayerSignatures(vehicleId, state, isDriving);
+
+  // 1. Renk Paleti Gradyan Duraklarını Yerinde Güncelle
+  if (existingSvg.dataset.paletteSig !== sigs.paletteSig) {
+    existingSvg.dataset.paletteSig = sigs.paletteSig;
+    const stopLight = existingSvg.querySelector('[data-stop="light"]');
+    const stopPrimary = existingSvg.querySelector('[data-stop="primary"]');
+    const stopDark = existingSvg.querySelector('[data-stop="dark"]');
+    const stopDeep = existingSvg.querySelector('[data-stop="deep"]');
+    const stopSidePrimary = existingSvg.querySelector('[data-stop="side-primary"]');
+    const stopSideDark = existingSvg.querySelector('[data-stop="side-dark"]');
+    if (stopLight) stopLight.setAttribute('stop-color', palette.light);
+    if (stopPrimary) stopPrimary.setAttribute('stop-color', palette.primary);
+    if (stopDark) stopDark.setAttribute('stop-color', palette.dark);
+    if (stopDeep) stopDeep.setAttribute('stop-color', palette.deep);
+    if (stopSidePrimary) stopSidePrimary.setAttribute('stop-color', palette.primary);
+    if (stopSideDark) stopSideDark.setAttribute('stop-color', palette.dark);
+  }
+
+  // 2. Gövde Katmanı
+  const bodyShell = existingSvg.querySelector('#body-shell');
+  if (bodyShell && bodyShell.dataset.sig !== sigs.bodySig) {
+    bodyShell.dataset.sig = sigs.bodySig;
+    bodyShell.innerHTML = renderStudioBodySVG(vehicleId, state, u);
+  }
+
+  // 3. Tavan Modifiye Katmanı
+  const roofLayer = existingSvg.querySelector('#roof-mod-layer');
+  if (roofLayer && roofLayer.dataset.sig !== sigs.roofSig) {
+    roofLayer.dataset.sig = sigs.roofSig;
+    roofLayer.innerHTML = renderRoofModSVG(cfg.roofAnchor.x, cfg.roofAnchor.y, state.roofType);
+  }
+
+  // 4. Çıkartmalar Katmanı
+  const decalsLayer = existingSvg.querySelector('#decals-layer');
+  if (decalsLayer && decalsLayer.dataset.sig !== sigs.decalsSig) {
+    decalsLayer.dataset.sig = sigs.decalsSig;
+    decalsLayer.innerHTML = renderDecalsLayerSVG(cfg, state.decals);
+  }
+
+  // 5. Pas & Çamur Katmanı (Sürükleme sırasında yalnız opacity özniteliği güncellenir, DOM silinmez!)
+  const mudLayer = existingSvg.querySelector('#mud-layer');
+  if (mudLayer) {
+    if (mudLayer.dataset.sig !== sigs.mudBinarySig) {
+      mudLayer.dataset.sig = sigs.mudBinarySig;
+      mudLayer.innerHTML = renderAuthenticRustMudSVG(state.mudLevels, u, isDriving);
+    } else {
+      const mudBlob = mudLayer.querySelector('.mud-blob');
+      if (mudBlob) {
+        mudBlob.setAttribute('opacity', sigs.mudOpacity);
+      }
+    }
+  }
+
+  // 6. Cıvata & Somunlar Katmanı
+  const boltsLayer = existingSvg.querySelector('#bolts-layer');
+  if (boltsLayer && boltsLayer.dataset.sig !== sigs.boltsSig) {
+    boltsLayer.dataset.sig = sigs.boltsSig;
+    boltsLayer.innerHTML = renderBoltsLayerSVG(cfg.boltPositions, state.boltsLoose, isDriving);
+  }
+
+  // 7. Tekerlekler Katmanı
+  const wheelsLayer = existingSvg.querySelector('#wheels-layer');
+  if (wheelsLayer && wheelsLayer.dataset.sig !== sigs.wheelsSig) {
+    wheelsLayer.dataset.sig = sigs.wheelsSig;
+    wheelsLayer.innerHTML = cfg.wheelPositions
+      .map((w, i) => renderStudioWheelSVG(w, i, state.wheelType, state.wheelsBroken[i], u, isDriving))
+      .join('');
+    return true; // Tekerlek düğümleri yenilendi
+  }
+
+  // 8. Sahne Üstü Aletler Katmanı
+  const toolsLayer = existingSvg.querySelector('#scene-tools-layer');
+  if (toolsLayer && toolsLayer.dataset.sig !== sigs.toolsSig) {
+    toolsLayer.dataset.sig = sigs.toolsSig;
+    toolsLayer.innerHTML = renderSceneInteractiveToolsSVG(state, isDriving);
+  }
+
+  return false;
 }
 
 window.VEHICLE_CATALOG = VEHICLE_CATALOG;
@@ -718,3 +878,4 @@ window.ROOF_TYPES = ROOF_TYPES;
 window.DECAL_KEYS = DECAL_KEYS;
 window.createInitialVehicleState = createInitialVehicleState;
 window.buildCompleteVehicleSVG = buildCompleteVehicleSVG;
+window.updateVehicleInPlace = updateVehicleInPlace;
