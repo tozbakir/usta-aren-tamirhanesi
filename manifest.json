@@ -1,0 +1,18 @@
+{
+  "name": "Usta Aren'in Çılgın Tamirhanesi",
+  "short_name": "Usta Aren",
+  "description": "Usta Aren için özel tasarlanmış tamir ve modifiye oyunu",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#61b5e8",
+  "theme_color": "#2b6cb0",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Ccircle cx='60' cy='60' r='56' fill='%232b6cb0' stroke='%23ffffff' stroke-width='6'/%3E%3Cpath d='M24 52 C24 16, 96 16, 96 52 Z' fill='%23ffbe0b'/%3E%3Crect x='18' y='48' width='84' height='10' rx='5' fill='%23ff9f1c'/%3E%3Ccircle cx='60' cy='74' r='22' fill='%23ffe4cc'/%3E%3Ccircle cx='52' cy='72' r='4' fill='%231e293b'/%3E%3Ccircle cx='68' cy='72' r='4' fill='%231e293b'/%3E%3Cpath d='M52 82 Q60 90 68 82' fill='none' stroke='%23e11d48' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

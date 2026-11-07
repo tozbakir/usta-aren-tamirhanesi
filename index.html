@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#3a86ff">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23ff9f1c' stroke='%23ffffff' stroke-width='4'/%3E%3C/svg%3E">
+  <title>Usta Aren'in Çılgın Tamirhanesi</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="sr-announcer" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Karşılama Ekranı -->
+  <dialog id="welcome-dialog" class="welcome-modal" aria-labelledby="welcome-title">
+    <div class="welcome-card">
+      <div id="welcome-avatar" class="welcome-avatar" aria-hidden="true"></div>
+      <h1 id="welcome-title">Usta Aren'in<br><span>Çılgın Tamirhanesi</span></h1>
+      <p class="welcome-subtitle">
+        Burada kuralları <strong>Aren Usta</strong> koyar! Patlak lastiği pompayla şişir, taşlama makinesiyle pasları parlat, fırçayla boya ve sürüşe çık!
+      </p>
+      <button type="button" id="start-game-btn" class="giant-start-btn">
+        <span id="start-btn-icon" class="btn-svg-wrap" aria-hidden="true"></span>
+        <span>TAMİRHANEYİ AÇ!</span>
+      </button>
+    </div>
+  </dialog>
+
+  <!-- Üst Kontrol Çubuğu -->
+  <header class="workshop-header">
+    <!-- Referans Görseldeki Yeşil Kavisli Sol Üst Rozet Stili -->
+    <div class="brand-badge">
+      <div id="header-avatar" class="header-avatar" aria-hidden="true"></div>
+      <div class="brand-text">
+        <span class="usta-title">USTA AREN</span>
+        <div class="star-counter" aria-label="Kazanılan yıldız sayısı">
+          <span id="star-icon-slot" class="star-svg-slot" aria-hidden="true"></span>
+          <span id="star-count">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Araç Seçim Sekmeleri -->
+    <nav class="vehicle-nav" aria-label="Tamir edilecek araçlar">
+      <button type="button" class="vehicle-tab" data-vehicle="tractor" aria-pressed="true" aria-label="Dev Kamyon">
+        <span class="tab-svg" data-icon="tabDumpTruck" aria-hidden="true"></span>
+        <span class="tab-label">Dev Kamyon</span>
+      </button>
+      <button type="button" class="vehicle-tab" data-vehicle="excavator" aria-pressed="false" aria-label="Dev Kepçe">
+        <span class="tab-svg" data-icon="tabExcavator" aria-hidden="true"></span>
+        <span class="tab-label">Kepçe</span>
+      </button>
+      <button type="button" class="vehicle-tab" data-vehicle="firetruck" aria-pressed="false" aria-label="Süper İtfaiye">
+        <span class="tab-svg" data-icon="tabFiretruck" aria-hidden="true"></span>
+        <span class="tab-label">İtfaiye</span>
+      </button>
+      <button type="button" class="vehicle-tab" data-vehicle="monster" aria-pressed="false" aria-label="Canavar Kamyon">
+        <span class="tab-svg" data-icon="tabMonster" aria-hidden="true"></span>
+        <span class="tab-label">Canavar</span>
+      </button>
+    </nav>
+
+    <!-- Aksiyon Düğmeleri -->
+    <div class="header-actions">
+      <button type="button" id="mischief-btn" class="action-pill mischief-pill" aria-label="Afacan Modu: Çamur at ve lastiği patlat">
+        <span class="pill-svg" data-icon="mischiefMud" aria-hidden="true"></span>
+        <span class="pill-text">Kirlet / Boz!</span>
+      </button>
+      <button type="button" id="test-drive-btn" class="action-pill drive-pill" aria-label="Test sürüşüne çık">
+        <span class="pill-svg" data-icon="flagGo" aria-hidden="true"></span>
+        <span class="pill-text">Sürüşe Çık!</span>
+      </button>
+      <button type="button" id="sound-toggle-btn" class="icon-btn" aria-pressed="true" aria-label="Sesi Aç veya Kapat">
+        <span id="sound-icon-slot" class="pill-svg" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Ana Stüdyo Tamirhane Sahnesi -->
+  <main id="workshop-main" class="workshop-stage">
+    <!-- Referans Görseldeki Ferah Açık Mavi Stüdyo Garaj Arka Planı -->
+    <div class="garage-backdrop" aria-hidden="true">
+      <svg class="garage-bg-svg" viewBox="0 0 1400 800" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="studioWall" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#61b5e8"/>
+            <stop offset="58%" stop-color="#80cbf7"/>
+            <stop offset="100%" stop-color="#9ad8fb"/>
+          </linearGradient>
+          <linearGradient id="studioFloor" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#9eb3c6"/>
+            <stop offset="100%" stop-color="#879db2"/>
+          </linearGradient>
+          <linearGradient id="lightCone" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.32"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Açık Mavi Endüstriyel Duvar Panelleri -->
+        <rect width="1400" height="545" fill="url(#studioWall)"/>
+        <line x1="280" y1="0" x2="280" y2="545" stroke="#53a4d6" stroke-width="4"/>
+        <line x1="620" y1="0" x2="620" y2="545" stroke="#53a4d6" stroke-width="4"/>
+        <line x1="980" y1="0" x2="980" y2="545" stroke="#53a4d6" stroke-width="4"/>
+        <rect y="275" width="1400" height="270" fill="#ffffff" opacity="0.1"/>
+
+        <!-- Tavan Spot Lambaları ve Işık Hüzmeleri (Referans görselin birebir atmosferi) -->
+        <polygon points="410,68 560,68 680,545 290,545" fill="url(#lightCone)"/>
+        <rect x="395" y="28" width="180" height="44" rx="22" fill="#d9edfa" stroke="#a6cde8" stroke-width="5"/>
+        <rect x="410" y="36" width="150" height="28" rx="14" fill="#f0f9ff"/>
+        <line x1="450" y1="36" x2="450" y2="64" stroke="#cfe5f5" stroke-width="2"/>
+        <line x1="485" y1="36" x2="485" y2="64" stroke="#cfe5f5" stroke-width="2"/>
+        <line x1="520" y1="36" x2="520" y2="64" stroke="#cfe5f5" stroke-width="2"/>
+
+        <polygon points="1030,68 1180,68 1300,545 910,545" fill="url(#lightCone)"/>
+        <rect x="1015" y="28" width="180" height="44" rx="22" fill="#d9edfa" stroke="#a6cde8" stroke-width="5"/>
+        <rect x="1030" y="36" width="150" height="28" rx="14" fill="#f0f9ff"/>
+        <line x1="1070" y1="36" x2="1070" y2="64" stroke="#cfe5f5" stroke-width="2"/>
+        <line x1="1105" y1="36" x2="1105" y2="64" stroke="#cfe5f5" stroke-width="2"/>
+        <line x1="1140" y1="36" x2="1140" y2="64" stroke="#cfe5f5" stroke-width="2"/>
+
+        <!-- Açık Gri Beton Atölye Zemini -->
+        <rect y="545" width="1400" height="255" fill="url(#studioFloor)"/>
+        <line x1="0" y1="545" x2="1400" y2="545" stroke="#7c93a8" stroke-width="5"/>
+      </svg>
+
+      <!-- Garaj Geçiş Kapısı -->
+      <div id="garage-door" class="garage-door">
+        <div class="door-slat"></div>
+        <div class="door-slat"></div>
+        <div class="door-slat"></div>
+        <div class="door-slat"></div>
+      </div>
+    </div>
+
+    <!-- Konuşma ve Yönlendirme Balonu -->
+    <div id="speech-bubble" class="speech-bubble" aria-hidden="true">
+      <span id="speech-text">Haydi tamire başlayalım Usta Aren!</span>
+    </div>
+
+    <!-- Tamir Durumu Göstergesi -->
+    <div class="repair-status-bar" aria-hidden="true">
+      <div class="status-chip" id="chip-mud">
+        <span class="chip-dot"></span>
+        <span>Pas & Çamur</span>
+      </div>
+      <div class="status-chip" id="chip-bolts">
+        <span class="chip-dot"></span>
+        <span>Lastik & Vidalar</span>
+      </div>
+      <div class="status-chip" id="chip-dents">
+        <span class="chip-dot"></span>
+        <span>Boya & Gövde</span>
+      </div>
+    </div>
+
+    <!-- Ana Etkileşimli SVG Araç Sahnesi -->
+    <div id="vehicle-stage" class="vehicle-stage"></div>
+
+    <!-- Boya ve Çılgın Parça Seçim Alt Tepsisi -->
+    <div id="sub-palette-bar" class="sub-palette-bar" hidden></div>
+
+    <!-- 60FPS Test Sürüşü Sahnesi (Kesintisiz Görünüm, Gökyüzü Kırpılması Yok!) -->
+    <div id="test-drive-stage" class="test-drive-stage" hidden>
+      <!-- Gökyüzü ve Tepeler (Sabit En-Boy Oranı Korunur) -->
+      <svg class="drive-scenery-svg" viewBox="0 0 1400 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="driveSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#38bdf8"/>
+            <stop offset="62%" stop-color="#bae6fd"/>
+            <stop offset="100%" stop-color="#e0f2fe"/>
+          </linearGradient>
+        </defs>
+        <rect width="1400" height="540" fill="url(#driveSky)"/>
+        <!-- Tam Yuvarlak Güneş -->
+        <circle cx="1180" cy="185" r="52" fill="#fff3b0"/>
+        <circle cx="1180" cy="185" r="42" fill="#ffbe0b"/>
+        <!-- Bulutlar -->
+        <g fill="#ffffff" opacity="0.88">
+          <path d="M 220 205 C 200 205, 190 185, 210 175 C 215 155, 250 155, 260 173 C 280 173, 285 205, 260 205 Z"/>
+          <path d="M 720 175 C 700 175, 690 155, 710 145 C 715 125, 750 125, 760 143 C 780 143, 785 175, 760 175 Z"/>
+        </g>
+        <!-- Yeşil Tepeler -->
+        <path d="M 0 515 Q 280 370 620 515 T 1400 500 L 1400 560 L 0 560 Z" fill="#52b788"/>
+        <path d="M 0 530 Q 420 420 860 530 T 1400 520 L 1400 580 L 0 580 Z" fill="#2d6a4f"/>
+        <!-- Asfalt Yol -->
+        <rect y="520" width="1400" height="220" fill="#343a40"/>
+        <rect y="520" width="1400" height="10" fill="#e9ecef"/>
+        <rect y="730" width="1400" height="70" fill="#40916c"/>
+      </svg>
+
+      <!-- Yol ve Araç Katmanı (overflow: visible sayesinde zıplayan araç asla kesilmez!) -->
+      <div id="road-track" class="road-track">
+        <div class="road-stripes"></div>
+        <div id="driving-vehicle" class="driving-vehicle"></div>
+        <div id="obstacles-container" class="obstacles-container"></div>
+      </div>
+
+      <div class="drive-controls">
+        <button type="button" id="drive-horn-btn" class="drive-action-btn horn-color">
+          <span class="drive-btn-svg" data-icon="wash" aria-hidden="true"></span>
+          <span>KORNA!</span>
+        </button>
+        <button type="button" id="drive-jump-btn" class="drive-action-btn jump-color">
+          <span class="drive-btn-svg" data-icon="wacky" aria-hidden="true"></span>
+          <span>ZIPLA / TURBO!</span>
+        </button>
+        <button type="button" id="back-garage-btn" class="drive-action-btn garage-color">
+          <span class="drive-btn-svg" data-icon="wrench" aria-hidden="true"></span>
+          <span>Tamirhaneye Dön</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- İmleci / Parmağı Takip Eden Canlı SVG Alet -->
+    <div id="floating-tool" class="floating-tool" aria-hidden="true" hidden></div>
+
+    <!-- 60FPS Vektör Parçacık Efekt Katmanı -->
+    <canvas id="fx-canvas" class="fx-canvas" aria-hidden="true"></canvas>
+  </main>
+
+  <!-- Alt Dev Alet Çantası (Referans Görseldeki Aletlerle Birebir) -->
+  <footer class="toolbelt-dock" aria-label="Alet Çantası">
+    <div class="toolbelt-tray">
+      <button type="button" class="tool-btn" data-tool="drill" aria-pressed="true" aria-label="Süper Taşlama ve Matkap - Pasları temizler ve vidaları sıkar">
+        <span class="tool-svg-slot" data-icon="drill" aria-hidden="true"></span>
+        <span class="tool-name">Taşlama & Matkap</span>
+      </button>
+
+      <button type="button" class="tool-btn" data-tool="wrench" aria-pressed="false" aria-label="Hava Pompası - Patlak lastiği şişirir">
+        <span class="tool-svg-slot" data-icon="wrench" aria-hidden="true"></span>
+        <span class="tool-name">Hava Pompası</span>
+      </button>
+
+      <button type="button" class="tool-btn" data-tool="paint" aria-pressed="false" aria-label="Boya Fırçası ve Çıkartmalar">
+        <span class="tool-svg-slot" data-icon="paint" aria-hidden="true"></span>
+        <span class="tool-name">Boya Fırçası</span>
+      </button>
+
+      <button type="button" class="tool-btn" data-tool="hammer" aria-pressed="false" aria-label="Dev Çekiç - Göçükleri düzeltir">
+        <span class="tool-svg-slot" data-icon="hammer" aria-hidden="true"></span>
+        <span class="tool-name">Çekiç</span>
+      </button>
+
+      <button type="button" class="tool-btn" data-tool="wacky" aria-pressed="false" aria-label="Çılgın Parçalar - Çörek tekerlek ve roket takar">
+        <span class="tool-svg-slot" data-icon="wacky" aria-hidden="true"></span>
+        <span class="tool-name">Çılgın Modifiye</span>
+      </button>
+
+      <button type="button" class="tool-btn" data-tool="wash" aria-pressed="false" aria-label="Köpük Yıkama ve Havalı Korna">
+        <span class="tool-svg-slot" data-icon="wash" aria-hidden="true"></span>
+        <span class="tool-name">Köpük & Korna</span>
+      </button>
+    </div>
+  </footer>
+
+  <script src="svg-assets.js"></script>
+  <script src="vehicles.js"></script>
+  <script src="audio.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
