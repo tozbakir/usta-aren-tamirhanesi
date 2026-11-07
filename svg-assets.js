@@ -93,43 +93,43 @@ const SVG_ICONS = {
     </svg>
   `,
 
-  // 1. TAŞLAMA & MATKAP (Referans görseldeki sarı-siyah dönen diskli taşlama/matkap!)
+  // 1. ŞARJLI USTA MATKABI (Sarı-Siyah Kablosuz Elektrikli Matkap + Dönen Burgulu Matkap Ucu!)
   drill: `
     <svg viewBox="0 0 120 100" class="svg-icon tool-svg" aria-hidden="true">
       <!-- Beyaz Sticker Dış Kontur -->
-      <g stroke="#ffffff" stroke-width="9" stroke-linejoin="round" stroke-linecap="round">
-        <rect x="10" y="42" width="58" height="24" rx="10" fill="#ffffff" transform="rotate(-18 39 54)"/>
-        <circle cx="76" cy="40" r="24" fill="#ffffff"/>
+      <g stroke="#ffffff" stroke-width="9" stroke-linejoin="round" stroke-linecap="round" fill="#ffffff">
+        <rect x="18" y="18" width="52" height="30" rx="10"/>
+        <path d="M 28 46 L 20 76 L 38 78 L 46 46 Z"/>
+        <rect x="15" y="72" width="28" height="14" rx="5"/>
+        <polygon points="70,22 86,26 86,40 70,44"/>
+        <polygon points="86,30 112,30 116,33 112,36 86,36"/>
       </g>
-      <!-- Gövde Sapı (Siyah-Turuncu-Sarı Endüstriyel Tasarım) -->
-      <g transform="rotate(-18 39 54)">
-        <rect x="10" y="42" width="58" height="24" rx="10" fill="#ff9f1c"/>
-        <rect x="10" y="42" width="20" height="24" rx="9" fill="#2b2d42"/>
-        <rect x="14" y="46" width="12" height="5" rx="2.5" fill="#5c677d"/>
-        <rect x="30" y="44" width="32" height="7" rx="3" fill="#ffbf69"/>
-        <!-- Havalandırma Kanalları -->
-        <rect x="36" y="55" width="4" height="7" rx="1.5" fill="#d97706"/>
-        <rect x="43" y="55" width="4" height="7" rx="1.5" fill="#d97706"/>
-        <rect x="50" y="55" width="4" height="7" rx="1.5" fill="#d97706"/>
-        <!-- Üst Siyah Anahtar Düğmesi -->
-        <rect x="38" y="37" width="10" height="5" rx="2" fill="#1f2421"/>
-      </g>
-      <!-- Koruyucu Siyah Yarım Ay Siper -->
-      <path d="M 66 14 A 27 27 0 0 0 54 58 L 76 40 Z" fill="#2b2d42"/>
-      <!-- Dönen Metal Disk -->
-      <g class="spinning-disc-part" style="transform-origin: 76px 40px;">
-        <circle cx="76" cy="40" r="23" fill="#adb5bd"/>
-        <circle cx="76" cy="40" r="19" fill="#ced4da"/>
-        <circle cx="76" cy="40" r="14" fill="#e9ecef"/>
-        <!-- Hız Çizgileri -->
-        <path d="M 63 32 A 15 15 0 0 1 88 30" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
-        <path d="M 64 50 A 15 15 0 0 0 89 48" fill="none" stroke="#6c757d" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="76" cy="40" r="7" fill="#2b2d42"/>
-        <circle cx="76" cy="40" r="3" fill="#adb5bd"/>
-      </g>
-      <!-- Parlak Sarı Kıvılcım Noktası (Referans görseldeki gibi) -->
-      <circle cx="99" cy="36" r="7" fill="#fff3b0" opacity="0.9"/>
-      <circle cx="99" cy="36" r="4" fill="#ffbe0b"/>
+      <!-- Alt Şarjlı Batarya Bloğu -->
+      <rect x="15" y="72" width="28" height="14" rx="5" fill="#1e293b"/>
+      <rect x="18" y="75" width="12" height="4" rx="1.5" fill="#ef4444"/>
+      <!-- Tabanca Kabza (Sap) ve Kırmızı Tetik -->
+      <path d="M 28 46 L 20 75 L 38 76 L 46 46 Z" fill="#ff9f1c"/>
+      <path d="M 25 52 L 21 70 L 30 71 L 34 52 Z" fill="#2b2d42"/>
+      <path d="M 44 48 L 52 48 L 50 58 L 42 56 Z" fill="#e63946"/>
+      <!-- Matkap Ana Gövdesi (Sarı-Turuncu Endüstriyel Tasarım) -->
+      <rect x="18" y="18" width="52" height="30" rx="10" fill="#ffbe0b"/>
+      <rect x="18" y="18" width="16" height="30" rx="8" fill="#2b2d42"/>
+      <rect x="24" y="21" width="38" height="7" rx="3.5" fill="#fff3b0" opacity="0.8"/>
+      <!-- Havalandırma Izgaraları -->
+      <rect x="38" y="31" width="4" height="10" rx="1.5" fill="#d97706"/>
+      <rect x="45" y="31" width="4" height="10" rx="1.5" fill="#d97706"/>
+      <rect x="52" y="31" width="4" height="10" rx="1.5" fill="#d97706"/>
+      <!-- Mandren (Siyah-Gri Metal Uç Tutucu) -->
+      <polygon points="70,21 86,25 86,41 70,45" fill="#334155"/>
+      <rect x="72" y="24" width="5" height="18" rx="1.5" fill="#94a3b8"/>
+      <!-- Burgulu Çelik Matkap Ucu -->
+      <polygon points="86,30 111,30 116,33 111,36 86,36" fill="#ced4da" stroke="#475569" stroke-width="1.5"/>
+      <line x1="90" y1="36" x2="95" y2="30" stroke="#475569" stroke-width="2.2"/>
+      <line x1="97" y1="36" x2="102" y2="30" stroke="#475569" stroke-width="2.2"/>
+      <line x1="104" y1="36" x2="109" y2="30" stroke="#475569" stroke-width="2.2"/>
+      <!-- Uç Kıvılcımı -->
+      <circle cx="115" cy="33" r="5" fill="#fff3b0" opacity="0.9"/>
+      <circle cx="115" cy="33" r="2.5" fill="#ff9f1c"/>
     </svg>
   `,
 
@@ -301,6 +301,20 @@ const SVG_ICONS = {
       <circle cx="20" cy="36" r="5" fill="#ff9f1c"/>
       <circle cx="50" cy="36" r="11" fill="#2b2d42" stroke="#ffffff" stroke-width="2"/>
       <circle cx="50" cy="36" r="5" fill="#ff9f1c"/>
+    </svg>
+  `,
+
+  tabWasher: `
+    <svg viewBox="0 0 72 50" class="svg-icon" aria-hidden="true">
+      <rect x="18" y="4" width="36" height="42" rx="6" fill="#2ec4b6" stroke="#ffffff" stroke-width="2.8"/>
+      <rect x="20" y="6" width="32" height="9" rx="3" fill="#e9ecef"/>
+      <rect x="23" y="8.5" width="10" height="4" rx="1.5" fill="#38bdf8"/>
+      <circle cx="46" cy="10.5" r="3" fill="#ff9f1c"/>
+      <circle cx="36" cy="29" r="12" fill="#343a40" stroke="#ffffff" stroke-width="2.2"/>
+      <circle cx="36" cy="29" r="8.5" fill="#caf0f8"/>
+      <path d="M 28 30 Q 32 26 36 30 T 44 30 L 44 37 L 28 37 Z" fill="#38bdf8"/>
+      <circle cx="33" cy="26" r="2" fill="#ffffff"/>
+      <circle cx="39" cy="25" r="1.5" fill="#ffffff"/>
     </svg>
   `,
 

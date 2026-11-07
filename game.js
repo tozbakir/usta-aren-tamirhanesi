@@ -11,7 +11,8 @@
     tractor: window.createInitialVehicleState('tractor'),
     excavator: window.createInitialVehicleState('excavator'),
     firetruck: window.createInitialVehicleState('firetruck'),
-    monster: window.createInitialVehicleState('monster')
+    monster: window.createInitialVehicleState('monster'),
+    washer: window.createInitialVehicleState('washer')
   };
 
   // Atölye Süspansiyon Yay Fiziği (Hareketsizken Uyku Moduna Geçer -> 0 CPU/GPU Yükü)
@@ -37,9 +38,9 @@
 
   const TOOL_PHRASES = {
     drill: [
-      'Vıııınn! Taşlama makinesi pasları parlatıyor, vidaları sıkıyor Usta Aren!',
-      'Kıvılcımlar çıkıyor! Harikasın Aren Usta!',
-      'Bütün vidalar ve metal kasalar pırıl pırıl oldu Aren!'
+      'Vıııınn! Şarjlı matkap vidaları sımsıkı sıkıyor, pasları parlatıyor Usta Aren!',
+      'Matkap ucu hızla dönüyor, kıvılcımlar çıkıyor! Harikasın Aren Usta!',
+      'Bütün gevşek vidalar matkapla sıkıldı, pırıl pırıl oldu Aren!'
     ],
     wrench: [
       'Fıss fıss! Yeşil hava pompası patlak lastiği şişirdi Usta Aren!',
@@ -65,6 +66,39 @@
       'Düt düüüt! Köpüklerle tertemiz oldu Usta Aren!',
       'Bütün çamurlar yıkandı, yıldız gibi parlıyor Aren!',
       'Havalı korna çalıyor! Yolu açın Usta Aren geliyor!'
+    ]
+  };
+
+  const WASHER_PHRASES = {
+    drill: [
+      'Vıııınn! Şarjlı matkapla çamaşır makinesinin gevşek vidalarını sıktık Usta Aren!',
+      'Matkap çalıştı, çamaşır makinesinin tamburu hızla dönüyor Aren Usta!',
+      'Bütün kapak vidaları matkapla sağlamlaştırıldı, harikasın Usta Aren!'
+    ],
+    wrench: [
+      'Fıss fıss! Su pompası tamir edildi, kapağa sıkışan çorap kurtarıldı Usta Aren!',
+      'Su kaçağı durdu, çamaşır makinesi saat gibi çalışıyor Aren Usta!',
+      'Kapak contası ve pompa taş gibi sağlam oldu Aren!'
+    ],
+    paint: [
+      'Fırçayla çamaşır makinesini boyuyoruz! Bu renk harika oldu Usta Aren!',
+      'Çamaşır makinesi yepyeni parlıyor Aren Usta!',
+      'Süper tasarım! En havalı çamaşır makinesi Usta Aren’in tamirhanesinde!'
+    ],
+    hammer: [
+      'Tak tak tak! Çamaşır makinesinin kazan sarsıntısı düzeldi Usta Aren!',
+      'Güm! Gövde sacı dümdüz oldu, tambur fırıl fırıl dönüyor!',
+      'Ne güçlü bir usta darbesi Aren Usta!'
+    ],
+    wacky: [
+      'Hahaha! Çamaşır makinesine çörek tekerlek ve roket mi taktın Usta Aren?!',
+      'Uçan çılgın çamaşır makinesi! Burada kuralları Aren Usta koyar!',
+      'Süper modifiye! Bu çamaşır makinesi yarışa hazır Aren!'
+    ],
+    wash: [
+      'Köpükler fışkırıyor! Çamaşırlar bembeyaz ve mis kokulu oldu Usta Aren!',
+      'Tambur köpüklerle dönüyor, tertemiz yıkandı Aren Usta!',
+      'Düt düüüt! Köpüklü çamaşır makinesi yola çıkmaya hazır!'
     ]
   };
 
@@ -320,10 +354,9 @@
       workshopRefs.shadow.setAttribute('rx', (225 * scale).toFixed(1));
     }
 
-    const st = vehicleStates[currentVehicleId];
     const angleStr = `rotate(${rigPhysics.wheelAngle.toFixed(1)})`;
     for (let idx = 0; idx < workshopRefs.wheels.length; idx++) {
-      if (!st.wheelsBroken[idx] && workshopRefs.wheels[idx]) {
+      if (workshopRefs.wheels[idx]) {
         workshopRefs.wheels[idx].setAttribute('transform', angleStr);
       }
     }
@@ -399,31 +432,31 @@
 
     if (toolId === 'drill') {
       window.arenAudio.playDrill();
-      impulseVehicle(5, (Math.random() - 0.5) * 3, 24);
+      impulseVehicle(6, (Math.random() - 0.5) * 3.5, 32);
 
-      if (partType === 'mud') {
-        st.mudLevels = [0, 0, 0];
-      } else if (partType === 'bolt') {
+      if (partType === 'bolt' && partEl && partEl.dataset.boltIndex !== undefined) {
         const bIdx = Number(partEl.dataset.boltIndex);
         st.boltsLoose[bIdx] = false;
-      } else {
-        st.mudLevels = st.mudLevels.map((m) => Math.max(0, m - 0.55));
+        st.mudLevels = st.mudLevels.map((m) => Math.max(0, m - 0.5));
+      } else if (partType === 'mud') {
+        st.mudLevels = [0, 0, 0];
         const looseIdx = st.boltsLoose.findIndex(Boolean);
-        if (looseIdx !== -1) {
-          st.boltsLoose[looseIdx] = false;
-        }
+        if (looseIdx !== -1) st.boltsLoose[looseIdx] = false;
+      } else {
+        st.mudLevels = [0, 0, 0];
+        st.boltsLoose = st.boltsLoose.map(() => false);
       }
       spawnVectorParticles(clientX, clientY, 'drill', 20);
     } else if (toolId === 'wrench') {
       window.arenAudio.playWrench();
-      impulseVehicle(14, -4, 22);
+      impulseVehicle(14, -4, 26);
 
       st.wheelsBroken = [false, false];
-      st.boltsLoose = [false, false, false];
+      st.boltsLoose = st.boltsLoose.map(() => false);
       spawnVectorParticles(clientX, clientY, 'wrench', 18);
     } else if (toolId === 'paint') {
       window.arenAudio.playPaint();
-      impulseVehicle(7, -2, 8);
+      impulseVehicle(7, -2, 14);
 
       if (st.primerUnpainted) {
         st.primerUnpainted = false;
@@ -435,15 +468,15 @@
       spawnVectorParticles(clientX, clientY, 'paint', 20);
     } else if (toolId === 'hammer') {
       window.arenAudio.playHammer();
-      impulseVehicle(18, (Math.random() - 0.5) * 8, 10);
+      impulseVehicle(18, (Math.random() - 0.5) * 8, 18);
 
       st.roofDent = false;
       st.engineDent = false;
-      st.boltsLoose = [false, false, false];
+      st.boltsLoose = st.boltsLoose.map(() => false);
       spawnVectorParticles(clientX, clientY, 'hammer', 18);
     } else if (toolId === 'wacky') {
       window.arenAudio.playWacky();
-      impulseVehicle(15, -5, 26);
+      impulseVehicle(15, -5, 28);
 
       st.wheelsBroken = [false, false];
       st.roofDent = false;
@@ -463,7 +496,7 @@
       spawnVectorParticles(clientX, clientY, 'wacky', 20);
     } else if (toolId === 'wash') {
       window.arenAudio.playHorn();
-      impulseVehicle(6, 2, 12);
+      impulseVehicle(6, 2, 28);
 
       if (partType === 'mud') {
         st.mudLevels = [0, 0, 0];
@@ -475,7 +508,8 @@
 
     mountOrUpdateVehicle(paletteNeedsSync);
 
-    const phrases = TOOL_PHRASES[toolId] || TOOL_PHRASES.drill;
+    const phraseBank = currentVehicleId === 'washer' ? WASHER_PHRASES : TOOL_PHRASES;
+    const phrases = phraseBank[toolId] || TOOL_PHRASES.drill;
     setSpeech(phrases[actionCounter % phrases.length], true, false);
   }
 
@@ -744,7 +778,7 @@
   mischiefBtn.addEventListener('click', () => {
     if (isTestDrive) stopTestDrive();
     const st = vehicleStates[currentVehicleId];
-    st.boltsLoose = [true, true, true];
+    st.boltsLoose = currentVehicleId === 'washer' ? [true, true, true, true] : [true, true, true];
     st.wheelsBroken = [true, false];
     st.primerUnpainted = true;
     st.roofDent = true;
@@ -756,7 +790,10 @@
     mountOrUpdateVehicle(true);
 
     spawnVectorParticles(layoutMetrics.stageCenterX, layoutMetrics.stageCenterY, 'drill', 22);
-    setSpeech('Hahaha! Afacan Aren kamyonu çamura buladı ve lastiğini patlattı! Hadi baştan tamir edelim!', true, true);
+    const msg = currentVehicleId === 'washer'
+      ? 'Hahaha! Afacan Aren çamaşır makinesinin vidalarını gevşetti ve kapağa çorap sıkıştırdı! Hadi matkapla tamir edelim!'
+      : 'Hahaha! Afacan Aren kamyonu çamura buladı ve lastiğini patlattı! Hadi baştan tamir edelim!';
+    setSpeech(msg, true, true);
   });
 
   // Test Sürüşü Engelleri (Saf Vektör Beyaz Sticker Çerçeveli)

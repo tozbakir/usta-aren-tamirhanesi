@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23ff9f1c' stroke='%23ffffff' stroke-width='4'/%3E%3C/svg%3E">
   <title>Usta Aren'in Çılgın Tamirhanesi</title>
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
   <div id="sr-announcer" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
@@ -21,7 +21,7 @@
       <div id="welcome-avatar" class="welcome-avatar" aria-hidden="true"></div>
       <h1 id="welcome-title">Usta Aren'in<br><span>Çılgın Tamirhanesi</span></h1>
       <p class="welcome-subtitle">
-        Burada kuralları <strong>Aren Usta</strong> koyar! Patlak lastiği pompayla şişir, taşlama makinesiyle pasları parlat, fırçayla boya ve sürüşe çık!
+        Burada kuralları <strong>Aren Usta</strong> koyar! Patlak lastiği pompayla şişir, şarjlı matkapla vidaları sık, çamaşır makinesini ve dev araçları tamir et!
       </p>
       <button type="button" id="start-game-btn" class="giant-start-btn">
         <span id="start-btn-icon" class="btn-svg-wrap" aria-hidden="true"></span>
@@ -61,6 +61,10 @@
       <button type="button" class="vehicle-tab" data-vehicle="monster" aria-pressed="false" aria-label="Canavar Kamyon">
         <span class="tab-svg" data-icon="tabMonster" aria-hidden="true"></span>
         <span class="tab-label">Canavar</span>
+      </button>
+      <button type="button" class="vehicle-tab" data-vehicle="washer" aria-pressed="false" aria-label="Çamaşır Makinesi">
+        <span class="tab-svg" data-icon="tabWasher" aria-hidden="true"></span>
+        <span class="tab-label">Çamaşır M.</span>
       </button>
     </nav>
 
@@ -226,12 +230,12 @@
   <!-- Alt Dev Alet Çantası (Referans Görseldeki Aletlerle Birebir) -->
   <footer class="toolbelt-dock" aria-label="Alet Çantası">
     <div class="toolbelt-tray">
-      <button type="button" class="tool-btn" data-tool="drill" aria-pressed="true" aria-label="Süper Taşlama ve Matkap - Pasları temizler ve vidaları sıkar">
+      <button type="button" class="tool-btn" data-tool="drill" aria-pressed="true" aria-label="Şarjlı Usta Matkabı - Vidaları sıkar ve pasları temizler">
         <span class="tool-svg-slot" data-icon="drill" aria-hidden="true"></span>
-        <span class="tool-name">Taşlama & Matkap</span>
+        <span class="tool-name">Şarjlı Matkap</span>
       </button>
 
-      <button type="button" class="tool-btn" data-tool="wrench" aria-pressed="false" aria-label="Hava Pompası - Patlak lastiği şişirir">
+      <button type="button" class="tool-btn" data-tool="wrench" aria-pressed="false" aria-label="Hava Pompası - Patlak lastiği şişirir ve kapağı açar">
         <span class="tool-svg-slot" data-icon="wrench" aria-hidden="true"></span>
         <span class="tool-name">Hava Pompası</span>
       </button>
@@ -258,9 +262,9 @@
     </div>
   </footer>
 
-  <script defer src="svg-assets.js?v=5"></script>
-  <script defer src="vehicles.js?v=5"></script>
-  <script defer src="audio.js?v=5"></script>
-  <script defer src="game.js?v=5"></script>
+  <script defer src="svg-assets.js?v=6"></script>
+  <script defer src="vehicles.js?v=6"></script>
+  <script defer src="audio.js?v=6"></script>
+  <script defer src="game.js?v=6"></script>
 </body>
 </html>

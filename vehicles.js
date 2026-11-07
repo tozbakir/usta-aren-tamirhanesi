@@ -101,6 +101,29 @@ const VEHICLE_CATALOG = {
       { x: 475, y: 172 }
     ],
     roofAnchor: { x: 365, y: 78 }
+  },
+
+  washer: {
+    id: 'washer',
+    title: 'Çamaşır Makinesi',
+    welcomeVoice: 'Çamaşır Makinesi bozulmuş Usta Aren! Şarjlı matkapla gevşek vidaları sıkalım, su pompasını ve sıkışan kapağı tamir edip tamburu döndürelim!',
+    defaultColor: 2,
+    wheelPositions: [
+      { x: 256, y: 294, r: 30 },
+      { x: 434, y: 294, r: 30 }
+    ],
+    boltPositions: [
+      { x: 232, y: 122 },
+      { x: 458, y: 122 },
+      { x: 232, y: 242 },
+      { x: 458, y: 242 }
+    ],
+    decalSlots: [
+      { x: 236, y: 182 },
+      { x: 454, y: 182 },
+      { x: 345, y: 112 }
+    ],
+    roofAnchor: { x: 345, y: 46 }
   }
 };
 
@@ -115,7 +138,7 @@ function createInitialVehicleState(vehicleId) {
     roofDent: false,
     engineDent: false,
     turboExhaust: false,
-    boltsLoose: [true, true, false],
+    boltsLoose: vehicleId === 'washer' ? [true, true, true, true] : [true, true, false],
     mudLevels: [1, 1, 1],
     decals: [],
     bucketAngle: 0
@@ -293,7 +316,7 @@ function renderStudioWheelSVG(wheelCfg, idx, wheelType, isBroken, u, isDriving =
 }
 
 // Referans Görseldeki Düzensiz Sıçramış Pas & Çamur Katmanı
-function renderAuthenticRustMudSVG(mudLevels, u, isDriving = false) {
+function renderAuthenticRustMudSVG(mudLevels, u, isDriving = false, vehicleId = 'tractor') {
   if (isDriving) return '';
   const totalMud = mudLevels.reduce((acc, v) => acc + v, 0) / mudLevels.length;
   if (totalMud <= 0.05) {
@@ -304,8 +327,10 @@ function renderAuthenticRustMudSVG(mudLevels, u, isDriving = false) {
     `;
   }
 
+  const mudShift = vehicleId === 'washer' ? 'transform="translate(68, 28) scale(0.88)"' : '';
+
   return `
-    <g class="mud-blob interactive-part" data-part="mud" data-mud-index="0" opacity="${Math.min(1, totalMud * 1.15).toFixed(2)}">
+    <g class="mud-blob interactive-part" data-part="mud" data-mud-index="0" ${mudShift} opacity="${Math.min(1, totalMud * 1.15).toFixed(2)}">
       <!-- Koyu Kahve Alt Pas/Çamur Yığını (Saf Vektör Beyaz Sticker Konturlu) -->
       <path d="M 142 115
                C 155 102, 185 108, 198 112
@@ -342,51 +367,108 @@ function renderAuthenticRustMudSVG(mudLevels, u, isDriving = false) {
   `;
 }
 
+// Sahne Üstü Şarjlı Matkap Çizimi (Hem Çamaşır Makinesinde Hem Araçlarda Gevşek Vidaları Sıkar!)
+function renderStageCordlessDrillSVG(x, y) {
+  return `
+    <g transform="translate(${x}, ${y})" class="scene-hero-tool interactive-part" data-part="bolt" data-scene-tool="drill">
+      <!-- Saf Vektör Beyaz Sticker Kontur -->
+      <g stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" fill="#ffffff">
+        <rect x="-86" y="-18" width="54" height="30" rx="10"/>
+        <path d="M -74 10 L -82 40 L -64 42 L -56 10 Z"/>
+        <rect x="-88" y="36" width="28" height="14" rx="5"/>
+        <polygon points="-32,-14 -16,-10 -16,4 -32,8"/>
+        <polygon points="-16,-6 12,-6 18,-3 12,0 -16,0"/>
+      </g>
+      <!-- Alt Şarjlı Batarya Bloğu -->
+      <rect x="-88" y="36" width="28" height="14" rx="5" fill="#1e293b"/>
+      <rect x="-84" y="39" width="12" height="4" rx="1.5" fill="#ef4444"/>
+      <!-- Tabanca Kabza ve Kırmızı Tetik -->
+      <path d="M -74 10 L -82 39 L -64 40 L -56 10 Z" fill="#ff9f1c"/>
+      <path d="M -77 16 L -81 34 L -72 35 L -68 16 Z" fill="#2b2d42"/>
+      <path d="M -58 12 L -50 12 L -52 22 L -60 20 Z" fill="#e63946"/>
+      <!-- Matkap Ana Gövdesi -->
+      <rect x="-86" y="-18" width="54" height="30" rx="10" fill="#ffbe0b"/>
+      <rect x="-86" y="-18" width="16" height="30" rx="8" fill="#2b2d42"/>
+      <rect x="-80" y="-15" width="38" height="7" rx="3.5" fill="#fff3b0" opacity="0.85"/>
+      <rect x="-64" y="-5" width="4" height="10" rx="1.5" fill="#d97706"/>
+      <rect x="-57" y="-5" width="4" height="10" rx="1.5" fill="#d97706"/>
+      <rect x="-50" y="-5" width="4" height="10" rx="1.5" fill="#d97706"/>
+      <!-- Mandren -->
+      <polygon points="-32,-15 -16,-11 -16,5 -32,9" fill="#334155"/>
+      <rect x="-30" y="-12" width="5" height="18" rx="1.5" fill="#94a3b8"/>
+      <!-- Burgulu Çelik Matkap Ucu -->
+      <polygon points="-16,-6 12,-6 18,-3 12,0 -16,0" fill="#ced4da" stroke="#475569" stroke-width="1.5"/>
+      <line x1="-11" y1="0" x2="-6" y2="-6" stroke="#475569" stroke-width="2.2"/>
+      <line x1="-3" y1="0" x2="2" y2="-6" stroke="#475569" stroke-width="2.2"/>
+      <line x1="5" y1="0" x2="10" y2="-6" stroke="#475569" stroke-width="2.2"/>
+      <!-- Parlak Sarı Kıvılcım Parlaması -->
+      <circle cx="18" cy="-3" r="10" fill="#fff3b0" opacity="0.88" class="hint-pulse"/>
+      <circle cx="18" cy="-3" r="5" fill="#ff9f1c"/>
+    </g>
+  `;
+}
+
 // Referans Görseldeki Sahne Üstü Aktif Aletler (Saf Vektör Beyaz Sticker Konturlu - Filtresiz 60FPS)
-function renderSceneInteractiveToolsSVG(state, isDriving = false) {
+function renderSceneInteractiveToolsSVG(state, isDriving = false, vehicleId = 'tractor') {
   if (isDriving) return '';
   const hasMud = state.mudLevels.some((m) => m > 0.05);
+  const hasLooseBolts = state.boltsLoose.some(Boolean);
   const hasFlatTire = state.wheelsBroken[0];
   const isUnpainted = state.primerUnpainted;
 
   let html = '';
 
-  // 1. Sol Üst: Pas/Çamur Varsa Dönen Sarı Taşlama Makinesi
-  if (hasMud) {
-    html += `
-      <g transform="translate(86, 136)" class="scene-hero-tool interactive-part" data-part="mud" data-scene-tool="drill">
-        <!-- Saf Vektör Beyaz Sticker Kontur -->
-        <g stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
-          <rect x="-64" y="-13" width="66" height="26" rx="11" fill="#ffffff" transform="rotate(-18)"/>
-          <circle cx="20" cy="-2" r="28" fill="#ffffff"/>
+  // 1. Sol Üst: Çamaşır Makinesinde (veya Gevşek Vidalarda) Şarjlı Matkap + Kamyonda Taşlama/Matkap!
+  if (vehicleId === 'washer') {
+    if (hasLooseBolts || hasMud) {
+      const cfg = VEHICLE_CATALOG[vehicleId];
+      const firstLooseIdx = state.boltsLoose.findIndex(Boolean);
+      const boltPos = cfg.boltPositions[firstLooseIdx !== -1 ? firstLooseIdx : 0];
+      html += renderStageCordlessDrillSVG(boltPos.x - 24, boltPos.y + 2);
+    }
+  } else {
+    if (hasMud) {
+      html += `
+        <g transform="translate(86, 136)" class="scene-hero-tool interactive-part" data-part="mud" data-scene-tool="drill">
+          <!-- Saf Vektör Beyaz Sticker Kontur -->
+          <g stroke="#ffffff" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
+            <rect x="-64" y="-13" width="66" height="26" rx="11" fill="#ffffff" transform="rotate(-18)"/>
+            <circle cx="20" cy="-2" r="28" fill="#ffffff"/>
+          </g>
+          <!-- Sap (Sarı-Turuncu-Siyah) -->
+          <g transform="rotate(-18)">
+            <rect x="-64" y="-13" width="66" height="26" rx="11" fill="#ff9f1c"/>
+            <rect x="-64" y="-13" width="22" height="26" rx="10" fill="#2b2d42"/>
+            <rect x="-58" y="-8" width="12" height="5" rx="2.5" fill="#5c677d"/>
+            <rect x="-40" y="-10" width="34" height="7" rx="3" fill="#ffbf69"/>
+            <rect x="-34" y="1" width="4" height="8" rx="1.5" fill="#d97706"/>
+            <rect x="-26" y="1" width="4" height="8" rx="1.5" fill="#d97706"/>
+            <rect x="-18" y="1" width="4" height="8" rx="1.5" fill="#d97706"/>
+            <rect x="-32" y="-18" width="11" height="5" rx="2" fill="#1f2421"/>
+          </g>
+          <!-- Koruyucu Siyah Siper -->
+          <path d="M 10 -30 A 30 30 0 0 0 -4 18 L 20 0 Z" fill="#2b2d42"/>
+          <!-- Dönen Metal Disk -->
+          <g class="spinning-disc-part" style="transform-origin: 20px -2px;">
+            <circle cx="20" cy="-2" r="26" fill="#adb5bd"/>
+            <circle cx="20" cy="-2" r="21" fill="#ced4da"/>
+            <circle cx="20" cy="-2" r="15" fill="#e9ecef"/>
+            <path d="M 6 -10 A 16 16 0 0 1 34 -12" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="20" cy="-2" r="8" fill="#2b2d42"/>
+            <circle cx="20" cy="-2" r="3.5" fill="#adb5bd"/>
+          </g>
+          <!-- Parlak Sarı Kıvılcım Parlaması -->
+          <circle cx="48" cy="-6" r="11" fill="#fff3b0" opacity="0.85" class="hint-pulse"/>
+          <circle cx="48" cy="-6" r="6" fill="#ffbe0b"/>
         </g>
-        <!-- Sap (Sarı-Turuncu-Siyah) -->
-        <g transform="rotate(-18)">
-          <rect x="-64" y="-13" width="66" height="26" rx="11" fill="#ff9f1c"/>
-          <rect x="-64" y="-13" width="22" height="26" rx="10" fill="#2b2d42"/>
-          <rect x="-58" y="-8" width="12" height="5" rx="2.5" fill="#5c677d"/>
-          <rect x="-40" y="-10" width="34" height="7" rx="3" fill="#ffbf69"/>
-          <rect x="-34" y="1" width="4" height="8" rx="1.5" fill="#d97706"/>
-          <rect x="-26" y="1" width="4" height="8" rx="1.5" fill="#d97706"/>
-          <rect x="-18" y="1" width="4" height="8" rx="1.5" fill="#d97706"/>
-          <rect x="-32" y="-18" width="11" height="5" rx="2" fill="#1f2421"/>
-        </g>
-        <!-- Koruyucu Siyah Siper -->
-        <path d="M 10 -30 A 30 30 0 0 0 -4 18 L 20 0 Z" fill="#2b2d42"/>
-        <!-- Dönen Metal Disk -->
-        <g class="spinning-disc-part" style="transform-origin: 20px -2px;">
-          <circle cx="20" cy="-2" r="26" fill="#adb5bd"/>
-          <circle cx="20" cy="-2" r="21" fill="#ced4da"/>
-          <circle cx="20" cy="-2" r="15" fill="#e9ecef"/>
-          <path d="M 6 -10 A 16 16 0 0 1 34 -12" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="20" cy="-2" r="8" fill="#2b2d42"/>
-          <circle cx="20" cy="-2" r="3.5" fill="#adb5bd"/>
-        </g>
-        <!-- Parlak Sarı Kıvılcım Parlaması -->
-        <circle cx="48" cy="-6" r="11" fill="#fff3b0" opacity="0.85" class="hint-pulse"/>
-        <circle cx="48" cy="-6" r="6" fill="#ffbe0b"/>
-      </g>
-    `;
+      `;
+    }
+    if (hasLooseBolts) {
+      const cfg = VEHICLE_CATALOG[vehicleId];
+      const firstLooseIdx = state.boltsLoose.findIndex(Boolean);
+      const boltPos = cfg.boltPositions[firstLooseIdx !== -1 ? firstLooseIdx : 0];
+      html += renderStageCordlessDrillSVG(boltPos.x - 24, boltPos.y + 2);
+    }
   }
 
   // 2. Sol Alt: Patlak Tekerlek Varsa Yeşil Basınç Göstergeli Hava Pompası ve Hortumu
@@ -459,19 +541,27 @@ function renderSceneInteractiveToolsSVG(state, isDriving = false) {
   return html;
 }
 
-// Mekanik Somun ve Cıvatalar
+// Mekanik Somun ve Cıvatalar (Matkapla Sıkılan Burgulu Gövde Vidaları)
 function renderBoltsLayerSVG(boltPositions, boltsLoose, isDriving = false) {
   return boltPositions.map((pos, idx) => {
     const isLoose = boltsLoose[idx] && !isDriving;
-    const offsetY = isLoose ? -8 : 0;
-    const tilt = isLoose ? -14 : 0;
+    const offsetY = isLoose ? -10 : 0;
+    const tilt = isLoose ? -15 : 0;
     return `
       <g transform="translate(${pos.x}, ${pos.y})" class="bolt-socket interactive-part" data-part="bolt" data-bolt-index="${idx}">
-        <ellipse cx="0" cy="3" rx="9" ry="4" fill="#1b1e21"/>
-        ${isLoose ? `<rect x="-3.5" y="-8" width="7" height="10" fill="#8d99ae"/>` : ''}
+        <ellipse cx="0" cy="4" rx="10" ry="4.5" fill="#1b1e21"/>
+        ${isLoose ? `
+          <!-- Dışarı Çıkmış Burgulu Vida Gövdesi (Matkapla Sıkılmaya Hazır!) -->
+          <rect x="-4" y="-10" width="8" height="13" fill="#adb5bd" stroke="#343a40" stroke-width="1.5"/>
+          <line x1="-4" y1="-7" x2="4" y2="-5" stroke="#495057" stroke-width="1.8"/>
+          <line x1="-4" y1="-3" x2="4" y2="-1" stroke="#495057" stroke-width="1.8"/>
+        ` : ''}
         <g class="bolt-head-node" transform="translate(0, ${offsetY}) rotate(${tilt})">
-          <polygon points="-9,-4 -4.5,-10 4.5,-10 9,-4 4.5,2 -4.5,2" fill="${isLoose ? '#ced4da' : '#ffbe0b'}"/>
-          <polygon points="-7,-5 -3.5,-8.5 3.5,-8.5 7,-5" fill="#ffffff" opacity="0.45"/>
+          <polygon points="-10,-4 -5,-11 5,-11 10,-4 5,3 -5,3"
+            fill="${isLoose ? '#e2e8f0' : '#ffbe0b'}" stroke="#1e293b" stroke-width="2" stroke-linejoin="round"/>
+          <!-- Yıldız / Artı Matkap Yuvası -->
+          <line x1="-4" y1="-4" x2="4" y2="-4" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="0" y1="-8" x2="0" y2="0" stroke="#1e293b" stroke-width="2.2" stroke-linecap="round"/>
         </g>
       </g>
     `;
@@ -687,6 +777,109 @@ function renderStudioBodySVG(vehicleId, state, u) {
     `;
   }
 
+  if (vehicleId === 'washer') {
+    const doorBroken = state.wheelsBroken[0];
+    return `
+      <!-- Saf Vektör Beyaz Sticker Dış Kontur (60FPS Tablet GPU) -->
+      <rect x="202" y="48" width="286" height="238" rx="24"
+        fill="#ffffff" stroke="#ffffff" stroke-width="12" stroke-linejoin="round"/>
+
+      <!-- Çamaşır Makinesi Ana Gövde (Boyanmadan Önce Gri Astar Çelik, Boyanınca Canlı Parlak Renk!) -->
+      <rect x="205" y="50" width="280" height="234" rx="22" fill="${bedFill}"/>
+      <!-- Sağ 3B Derinlik Kenarı -->
+      <path d="M 462 50 L 465 50 C 476 50, 485 59, 485 70 L 485 264 C 485 275, 476 284, 465 284 L 462 284 Z" fill="${sideFill}" opacity="0.85"/>
+      <!-- Sol Üst Parlama Şeridi -->
+      <path d="M 216 64 L 216 266" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
+
+      <!-- Üst Kontrol Paneli (Deterjan Çekmecesi + Dijital LED Ekran + Program Kadranı) -->
+      <path d="M 205 70 C 205 58, 214 50, 226 50 L 464 50 C 476 50, 485 58, 485 70 L 485 102 L 205 102 Z" fill="#f1f5f9"/>
+      <line x1="205" y1="102" x2="485" y2="102" stroke="#94a3b8" stroke-width="4"/>
+
+      <!-- Sol: Deterjan ve Köpük Çekmecesi -->
+      <rect x="218" y="60" width="76" height="30" rx="7" fill="#e2e8f0" stroke="#64748b" stroke-width="2.5"/>
+      <rect x="234" y="72" width="44" height="8" rx="4" fill="#38bdf8"/>
+      <!-- Deterjan Gözünden Taşan Köpük Baloncukları -->
+      <circle cx="228" cy="62" r="7" fill="#caf0f8" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="240" cy="58" r="5.5" fill="#fbcfe8" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="282" cy="63" r="6" fill="#caf0f8" stroke="#ffffff" stroke-width="2"/>
+
+      <!-- Orta: Dijital LED Gösterge Ekranı -->
+      <rect x="306" y="60" width="82" height="30" rx="7" fill="#0f172a" stroke="#475569" stroke-width="2.5"/>
+      <circle cx="320" cy="75" r="4.5" fill="${doorBroken ? '#ef4444' : '#38b000'}"/>
+      <circle cx="333" cy="75" r="4.5" fill="#ffbe0b"/>
+      <path d="M 346 78 Q 354 68 362 78 T 378 78" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/>
+
+      <!-- Sağ: Döner Program Seçici Kadran -->
+      <circle cx="436" cy="75" r="15" fill="#334155" stroke="#cbd5e1" stroke-width="3"/>
+      <circle cx="436" cy="75" r="9" fill="#f8fafc"/>
+      <line x1="436" y1="75" x2="444" y2="68" stroke="#ff9f1c" stroke-width="3.5" stroke-linecap="round"/>
+
+      <!-- Alt Servis ve Pompa Filtre Kapağı -->
+      <rect x="220" y="256" width="250" height="20" rx="6" fill="#334155" opacity="0.28"/>
+      <circle cx="442" cy="266" r="7" fill="#475569" stroke="#1e293b" stroke-width="2"/>
+      <line x1="238" y1="266" x2="295" y2="266" stroke="#475569" stroke-width="3.5" stroke-linecap="round"/>
+
+      <!-- ORTA DEV YUVARLAK TAMBUR VE CAM KAPAK (60FPS Dönen Çamaşırlar ve Köpüklü Su!) -->
+      <g transform="translate(345, 178)">
+        <!-- Tambur Dış Gölge Yuvası -->
+        <circle cx="0" cy="0" r="68" fill="#1e293b"/>
+        <circle cx="0" cy="0" r="56" fill="#0f172a"/>
+
+        <!-- 60FPS DÖNEN PASLANMAZ ÇELİK TAMBUR VE RENKLİ ÇAMAŞIRLAR (.wheel-spin-node ile otomatik döner!) -->
+        <g class="wheel-spin-node">
+          <circle cx="0" cy="0" r="52" fill="#334155"/>
+          <!-- Tambur Delikleri ve Kanatçıkları -->
+          <circle cx="0" cy="-38" r="3.5" fill="#0f172a"/>
+          <circle cx="33" cy="-19" r="3.5" fill="#0f172a"/>
+          <circle cx="33" cy="19" r="3.5" fill="#0f172a"/>
+          <circle cx="0" cy="38" r="3.5" fill="#0f172a"/>
+          <circle cx="-33" cy="19" r="3.5" fill="#0f172a"/>
+          <circle cx="-33" cy="-19" r="3.5" fill="#0f172a"/>
+
+          <!-- Tambur İçindeki Renkli Çamaşırlar (Kırmızı Tişört, Sarı Çorap, Mor Havlu) -->
+          <path d="M -32 -12 C -24 -36, 12 -38, 26 -16 C 14 -2, -16 4, -32 -12 Z" fill="#e63946"/>
+          <path d="M -14 10 C 8 -8, 38 4, 28 28 C 12 40, -24 30, -14 10 Z" fill="#ffbe0b"/>
+          <path d="M -36 8 C -20 2, -6 22, -18 36 C -34 34, -44 18, -36 8 Z" fill="#7209b7"/>
+
+          <!-- Köpüklü Turkuaz Su Dalgası -->
+          <path d="M -48 6 Q -24 -10 0 6 T 48 6 A 48 48 0 0 1 -48 6 Z" fill="#38bdf8" opacity="0.82"/>
+          <path d="M -44 18 Q -18 6 8 18 T 44 18 A 46 46 0 0 1 -44 18 Z" fill="#0077b6" opacity="0.75"/>
+
+          <!-- Su İçi Sabun Köpükleri -->
+          <circle cx="-18" cy="-8" r="7" fill="#ffffff" opacity="0.85"/>
+          <circle cx="16" cy="-14" r="5.5" fill="#caf0f8" opacity="0.9"/>
+          <circle cx="6" cy="12" r="8" fill="#ffffff" opacity="0.75"/>
+          <circle cx="-22" cy="18" r="5" fill="#caf0f8" opacity="0.85"/>
+        </g>
+
+        <!-- Krom Kapak Çerçevesi ve Cam Yansıması (Arızalıyken Sıkışmış Çizgili Çorap Sarkıyor!) -->
+        <g transform="rotate(${doorBroken ? -8 : 0})">
+          <circle cx="0" cy="0" r="60" fill="none" stroke="#cbd5e1" stroke-width="12"/>
+          <circle cx="0" cy="0" r="60" fill="none" stroke="#f8fafc" stroke-width="5"/>
+          <!-- Cam Parlaması -->
+          <path d="M -36 -24 A 44 44 0 0 1 28 -32" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.55"/>
+          <!-- Sağ Kapak Mandalı -->
+          <rect x="50" y="-14" width="14" height="28" rx="5" fill="#334155" stroke="#ffffff" stroke-width="2"/>
+        </g>
+
+        ${doorBroken ? `
+          <!-- Kapağa Sıkışmış Komik Pembe-Sarı Çizgili Çorap (Tamir Edilince İçeri Girer!) -->
+          <g transform="translate(-44, 38) rotate(18)">
+            <path d="M 0 0 L 18 6 L 12 32 C 10 42, -14 42, -18 32 C -22 24, -8 18, -4 14 Z"
+              fill="#ff4d8d" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke fill"/>
+            <line x1="-2" y1="8" x2="14" y2="13" stroke="#ffbe0b" stroke-width="4.5"/>
+            <line x1="-4" y1="17" x2="12" y2="22" stroke="#ffbe0b" stroke-width="4.5"/>
+          </g>
+        ` : ''}
+      </g>
+
+      ${!state.primerUnpainted ? `
+        ${window.renderSparkleStar(228, 108, 10, 0.1)}
+        ${window.renderSparkleStar(462, 108, 12, 0.4)}
+      ` : ''}
+    `;
+  }
+
   return `
     <path d="M 158 204 L 176 132 L 268 132 L 306 78 L 436 78 L 478 132 L 568 142 L 576 204 L 540 241 L 205 241 Z"
       fill="#ffffff" stroke="#ffffff" stroke-width="11" stroke-linejoin="round"/>
@@ -714,14 +907,14 @@ function computeLayerSignatures(vehicleId, state, isDriving) {
   const hasMud = totalMud > 0.05;
   return {
     paletteSig: `${state.colorIndex}`,
-    bodySig: `${vehicleId}|${state.primerUnpainted}|${state.bucketAngle}|${state.roofDent}`,
+    bodySig: `${vehicleId}|${state.primerUnpainted}|${state.bucketAngle}|${state.roofDent}|${state.wheelsBroken[0]}`,
     roofSig: `${vehicleId}|${state.roofType}`,
     decalsSig: state.decals.join(','),
-    mudBinarySig: `${isDriving}|${hasMud ? 'dirty' : 'clean'}`,
+    mudBinarySig: `${vehicleId}|${isDriving}|${hasMud ? 'dirty' : 'clean'}`,
     mudOpacity: Math.min(1, totalMud * 1.15).toFixed(2),
     boltsSig: `${isDriving}|${state.boltsLoose.join(',')}`,
     wheelsSig: `${isDriving}|${state.wheelType}|${state.wheelsBroken.join(',')}`,
-    toolsSig: `${isDriving}|${hasMud}|${state.wheelsBroken[0]}|${state.primerUnpainted}`
+    toolsSig: `${vehicleId}|${isDriving}|${hasMud}|${state.boltsLoose.join(',')}|${state.wheelsBroken[0]}|${state.primerUnpainted}`
   };
 }
 
@@ -756,7 +949,7 @@ function buildCompleteVehicleSVG(vehicleId, state, isDriving = false) {
             ${renderDecalsLayerSVG(cfg, state.decals)}
           </g>
           <g id="mud-layer" data-sig="${sigs.mudBinarySig}">
-            ${renderAuthenticRustMudSVG(state.mudLevels, u, isDriving)}
+            ${renderAuthenticRustMudSVG(state.mudLevels, u, isDriving, vehicleId)}
           </g>
           <g id="bolts-layer" data-sig="${sigs.boltsSig}">
             ${renderBoltsLayerSVG(cfg.boltPositions, state.boltsLoose, isDriving)}
@@ -768,7 +961,7 @@ function buildCompleteVehicleSVG(vehicleId, state, isDriving = false) {
         </g>
 
         <g id="scene-tools-layer" data-sig="${sigs.toolsSig}">
-          ${renderSceneInteractiveToolsSVG(state, isDriving)}
+          ${renderSceneInteractiveToolsSVG(state, isDriving, vehicleId)}
         </g>
       </g>
     </svg>
@@ -811,9 +1004,11 @@ function updateVehicleInPlace(containerEl, vehicleId, state, isDriving = false) 
 
   // 2. Gövde Katmanı
   const bodyShell = existingSvg.querySelector('#body-shell');
+  let drumRefreshed = false;
   if (bodyShell && bodyShell.dataset.sig !== sigs.bodySig) {
     bodyShell.dataset.sig = sigs.bodySig;
     bodyShell.innerHTML = renderStudioBodySVG(vehicleId, state, u);
+    drumRefreshed = true;
   }
 
   // 3. Tavan Modifiye Katmanı
@@ -835,7 +1030,7 @@ function updateVehicleInPlace(containerEl, vehicleId, state, isDriving = false) 
   if (mudLayer) {
     if (mudLayer.dataset.sig !== sigs.mudBinarySig) {
       mudLayer.dataset.sig = sigs.mudBinarySig;
-      mudLayer.innerHTML = renderAuthenticRustMudSVG(state.mudLevels, u, isDriving);
+      mudLayer.innerHTML = renderAuthenticRustMudSVG(state.mudLevels, u, isDriving, vehicleId);
     } else {
       const mudBlob = mudLayer.querySelector('.mud-blob');
       if (mudBlob) {
@@ -852,23 +1047,24 @@ function updateVehicleInPlace(containerEl, vehicleId, state, isDriving = false) 
   }
 
   // 7. Tekerlekler Katmanı
+  let wheelsRefreshed = false;
   const wheelsLayer = existingSvg.querySelector('#wheels-layer');
   if (wheelsLayer && wheelsLayer.dataset.sig !== sigs.wheelsSig) {
     wheelsLayer.dataset.sig = sigs.wheelsSig;
     wheelsLayer.innerHTML = cfg.wheelPositions
       .map((w, i) => renderStudioWheelSVG(w, i, state.wheelType, state.wheelsBroken[i], u, isDriving))
       .join('');
-    return true; // Tekerlek düğümleri yenilendi
+    wheelsRefreshed = true;
   }
 
   // 8. Sahne Üstü Aletler Katmanı
   const toolsLayer = existingSvg.querySelector('#scene-tools-layer');
   if (toolsLayer && toolsLayer.dataset.sig !== sigs.toolsSig) {
     toolsLayer.dataset.sig = sigs.toolsSig;
-    toolsLayer.innerHTML = renderSceneInteractiveToolsSVG(state, isDriving);
+    toolsLayer.innerHTML = renderSceneInteractiveToolsSVG(state, isDriving, vehicleId);
   }
 
-  return false;
+  return drumRefreshed || wheelsRefreshed;
 }
 
 window.VEHICLE_CATALOG = VEHICLE_CATALOG;
